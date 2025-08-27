@@ -1,6 +1,5 @@
 from typing import Literal
 
-
 class Error:
     def __init__(self, message, line, column, _type: Literal['lexer', 'parser', 'semantic'], data=None):
         self.message = message
