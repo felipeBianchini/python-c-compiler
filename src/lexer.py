@@ -152,12 +152,18 @@ class Lexer:
         t.value = float(t.value)
         return t
 
+    def t_MULTISTRING(self, t):
+        r""" 
+            \"\"\"([^\"\\]|\\.)*\"\"\" |
+            '''([^'\\]|\\.)*'''
+        """
+        t.value = t.value[3:-3]
+        return t
+    
     def t_STRING(self, t):
         r"""
             '([^'\\]|\\.)*' |
-            \"([^\"\\]|\\.)*\" |
-            \"\"\"([^\"\\]|\\.)*\"\"\" |
-            '''([^'\\]|\\.)*'''
+            \"([^\"\\]|\\.)*\"
         """
         t.value = t.value[1:-1]  # Remove quotes
         return t

@@ -1,4 +1,5 @@
 a = ñ
+"String"
 # Comment
 if a >= 0:
     a += 0

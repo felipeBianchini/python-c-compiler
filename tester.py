@@ -16,7 +16,9 @@ while True:
     token = lexer.token()
     if not token:
         break
-    print(f"{token.type}: {token.value} (line {token.lineno})")
+    val = str(token.value)
+    val = val.replace("\n", " \\n ")
+    print(f"{token.type}: {val} (line {token.lineno})")
 
 # Check for errors
 if errors:
