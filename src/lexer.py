@@ -104,7 +104,7 @@ class Lexer:
         return tok
 
     def handle_dedentation(self, token):
-        """Handle dedentation when a non-space token appears at start of line"""
+        # Handle dedentation when a non-space token appears at start of line
         current_level = self.indent_stack[-1]
         if current_level > 0:
             # We're at indent level 0 but stack has higher levels - generate DENT tokens
@@ -173,7 +173,7 @@ class Lexer:
         pass  # Ignore comments
 
     def handle_indentation(self, t):
-        """Handle indentation changes and generate appropriate tokens"""
+        # Handle indentation changes and generate appropriate tokens
         self.start = False
         
         # Calculate indentation level (convert tabs to 4 spaces)
