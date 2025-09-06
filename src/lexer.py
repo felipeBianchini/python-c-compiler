@@ -22,15 +22,18 @@ class Lexer:
 
     reserved = (
         'IF', 'ELSE', 'ELIF', 'WHILE', 'FOR', 'BREAK', 'CONTINUE', 'PASS', 'DEF', 'RETURN',
-        'CLASS', 'TRUE', 'FALSE', 'AND', 'OR', 'NOT',
+        'CLASS', 'AND', 'OR', 'NOT', '__INIT__', 'SELF', 'IN', 'RANGE'
     )
 
     tokens = reserved + (
         # Ids
-        'ID', 'INTEGER', 'FLOAT', 'STRING',
+        'ID', 'INTEGER', 'FLOAT', 'STRING', 'MULTISTRING',
 
         # Arithmetic
         'PLUS', 'MINUS', 'MUL', 'DIV', 'INT_DIV', 'MOD', 'POW',
+
+        # Boolean
+        'TRUE', 'FALSE',
 
         # Relational
         'EQUAL', 'NOT_EQUAL', 'GREATER', 'LESS', 'GREATER_EQUAL', 'LESS_EQUAL',
@@ -42,7 +45,7 @@ class Lexer:
         'LPAREN', 'RPAREN', 'LBRACKET', 'RBRACKET', 'LBRACE', 'RBRACE', 'COMMA', 'SEMICOLON', 'COLON', 'DOT',
         
         # Indentation
-        'INDENT', 'DENT', 'NEWLINE',
+        'INDENT', 'DENT', 'NEWLINE'
     )
 
     # Regular expression rules for simple tokens
@@ -54,6 +57,8 @@ class Lexer:
     t_INT_DIV = r'//'
     t_MOD = r'%'
     t_POW = r'\*\*'
+    t_TRUE = r'True'
+    t_FALSE = r'False'
     t_EQUAL = r'=='
     t_NOT_EQUAL = r'!='
     t_GREATER = r'>'
@@ -139,17 +144,17 @@ class Lexer:
         t.type = self.reserved_map.get(t.value, 'ID')
         return t
 
-    def t_INTEGER(self, t):
-        r"\d+"
-        t.value = int(t.value)
-        return t
-    
     def t_FLOAT(self, t):
         r"""
             \d+\.\d* |
             \.\d+
         """
         t.value = float(t.value)
+        return t
+
+    def t_INTEGER(self, t):
+        r"\d+"
+        t.value = int(t.value)
         return t
 
     def t_MULTISTRING(self, t):
