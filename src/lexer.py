@@ -22,7 +22,7 @@ class Lexer:
 
     reserved = (
         'IF', 'ELSE', 'ELIF', 'WHILE', 'FOR', 'BREAK', 'CONTINUE', 'PASS', 'DEF', 'RETURN',
-        'CLASS', 'AND', 'OR', 'NOT', '__INIT__', 'SELF', 'IN', 'RANGE'
+        'CLASS', 'AND', 'OR', 'NOT', '__INIT__', 'SELF', 'IN', 'RANGE', 'ITER', 'NEXT', 'PRINT'
     )
 
     tokens = reserved + (
@@ -49,7 +49,6 @@ class Lexer:
     )
 
     # Regular expression rules for simple tokens
-    # Operators
     t_PLUS = r'\+'
     t_MINUS = r'-'
     t_MUL = r'\*'
@@ -57,8 +56,6 @@ class Lexer:
     t_INT_DIV = r'//'
     t_MOD = r'%'
     t_POW = r'\*\*'
-    t_TRUE = r'True'
-    t_FALSE = r'False'
     t_EQUAL = r'=='
     t_NOT_EQUAL = r'!='
     t_GREATER = r'>'
@@ -112,7 +109,7 @@ class Lexer:
         # Handle dedentation when a non-space token appears at start of line
         current_level = self.indent_stack[-1]
         if current_level > 0:
-            # We're at indent level 0 but stack has higher levels - generate DENT tokens
+            # Currently on indent level 0 but stack has higher levels, so generate DENT tokens
             while len(self.indent_stack) > 1:
                 self.indent_stack.pop()
                 dent_token = lex.LexToken()
@@ -137,6 +134,16 @@ class Lexer:
             # Space in middle is not important
             pass
 
+    def t_TRUE(self, t):
+        r'True'
+        t.value = bool(t.value)
+        return t
+
+    def t_FALSE(self, t):
+        r'False'
+        t.value = bool(t.value)
+        return t
+
     def t_ID(self, t):
         r"[a-zA-Z_][a-zA-Z0-9_]*"
         if self.debug:
@@ -153,29 +160,72 @@ class Lexer:
         return t
 
     def t_INTEGER(self, t):
-        r"\d+"
+        r"-?\d+" # It might include a - at the beginning
         t.value = int(t.value)
         return t
 
     def t_MULTISTRING(self, t):
+        # Does not allow unescaped " or '
+        # Allow escape sequences, but initially allows any escape sequence, that´s why there is a validation function for them
         r""" 
             \"\"\"([^\"\\]|\\.)*\"\"\" |
             '''([^'\\]|\\.)*'''
         """
-        t.value = t.value[3:-3]
+        content = t.value[3:-3]  # Remove quotes
+        
+        # Check escape sequences
+        if not self._validate_escape_sequences(content, t.lineno, t.lexpos):
+            return None
+        
+        t.value = content
         return t
     
     def t_STRING(self, t):
+        # Does not allow unescaped " or '
+        # Allow escape sequences, but initially allows any escape sequence, that´s why there is a validation function for them
         r"""
             '([^'\\]|\\.)*' |
             \"([^\"\\]|\\.)*\"
         """
-        t.value = t.value[1:-1]  # Remove quotes
+        content = t.value[1:-1]  # Remove quotes
+        
+        # Check escape sequences
+        if not self._validate_escape_sequences(content, t.lineno, t.lexpos):
+            return None
+        
+        t.value = content
         return t
 
     def t_COMMENT(self, t):
         r"""\#.*"""
         pass  # Ignore comments
+
+    def _validate_escape_sequences(self, content, lineno, lexpos):
+        # Validates the escape sequences in strings
+        i = 0
+        while i < len(content):
+            if content[i] == '\\':
+                if i + 1 >= len(content):
+                    self.errors.append(Error(
+                        "Invalid escape sequence: string is unterminated",
+                        lineno, lexpos + i + 1, 'lexer', self.data
+                    ))
+                    return False
+                
+                next_char = content[i + 1]
+                valid_escapes = ['n', 't', '\\', '"', "'"]
+                
+                if next_char not in valid_escapes:
+                    self.errors.append(Error(
+                        f"Invalid escape sequence: '\\{next_char}'",
+                        lineno, lexpos + i + 1, 'lexer', self.data
+                    ))
+                    return False
+                i += 2
+            else:
+                i += 1
+        
+        return True
 
     def handle_indentation(self, t):
         # Handle indentation changes and generate appropriate tokens
@@ -214,7 +264,7 @@ class Lexer:
                 dent_token.lexpos = t.lexpos
                 self.pending_tokens.append(dent_token)
         
-        # Same indentation level - no token needed
+        # Same indentation level
         return None
 
     def t_error(self, t):
