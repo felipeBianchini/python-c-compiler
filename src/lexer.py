@@ -16,6 +16,7 @@ class Lexer:
         self.indent_stack = [0]  # Stack of indentation levels
         self.pending_tokens = []  # Queue for pending tokens
         self.start = True  # Flag to detect start of line
+        self.current_line_indent = 0  # Track current line's indentation
         
         for r in self.reserved:
             self.reserved_map[r.lower()] = r
@@ -94,7 +95,7 @@ class Lexer:
         
         # Check for dedentation when we encounter a non-space token at start of line
         if tok and self.start and tok.type not in ('NEWLINE', 'INDENT', 'DENT'):
-            self.handle_dedentation(tok)
+            self.handle_dedentation()
             self.start = False
             
             # Return pending tokens if any were generated
@@ -105,24 +106,33 @@ class Lexer:
         
         return tok
 
-    def handle_dedentation(self, token):
+    def handle_dedentation(self):
         # Handle dedentation when a non-space token appears at start of line
-        current_level = self.indent_stack[-1]
-        if current_level > 0:
-            # Currently on indent level 0 but stack has higher levels, so generate DENT tokens
-            while len(self.indent_stack) > 1:
-                self.indent_stack.pop()
-                dent_token = lex.LexToken()
-                dent_token.type = 'DENT'
-                dent_token.value = ''
-                dent_token.lineno = token.lineno
-                dent_token.lexpos = token.lexpos
-                self.pending_tokens.append(dent_token)
+        # Current line indentation was set to 0 since no spaces were processed
+        current_indent = 0  # No spaces means indentation level 0
+        
+        # Generate DENT tokens for each level we need to pop
+        while len(self.indent_stack) > 1 and self.indent_stack[-1] > current_indent:
+            self.indent_stack.pop()
+            dent_token = lex.LexToken()
+            dent_token.type = 'DENT'
+            dent_token.value = ''
+            dent_token.lineno = self.lex.lineno
+            dent_token.lexpos = self.lex.lexpos
+            self.pending_tokens.append(dent_token)
+        
+        # Check if we ended up at a valid indentation level
+        if len(self.indent_stack) > 0 and self.indent_stack[-1] != current_indent:
+            self.errors.append(Error(
+                f"Invalid indentation level: expected {self.indent_stack[-1]} spaces, got {current_indent}",
+                self.lex.lineno, self.lex.lexpos, 'lexer', self.data
+            ))
 
     def t_NEWLINE(self, t):
         r"""\n+"""
         t.lexer.lineno += len(t.value)
         self.start = True
+        self.current_line_indent = 0  # Reset line indentation tracking
         return t
 
     def t_SPACE(self, t):
@@ -233,10 +243,26 @@ class Lexer:
         
         # Calculate indentation level (convert tabs to 4 spaces)
         indent_level = len(t.value.expandtabs(4))
+        self.current_line_indent = indent_level
         current_level = self.indent_stack[-1]
         
+        # Validate that indentation is a multiple of 4
+        if indent_level % 4 != 0:
+            self.errors.append(Error(
+                f"Invalid indentation: indentation must be a multiple of 4 spaces, got {indent_level}",
+                t.lineno, t.lexpos, 'lexer', self.data
+            ))
+            return None
+        
         if indent_level > current_level:
-            # Indentation increase
+            # Indentation increase - must be exactly 4 spaces more
+            if indent_level != current_level + 4:
+                self.errors.append(Error(
+                    f"Invalid indentation: expected {current_level + 4} spaces (increase by 4), got {indent_level}",
+                    t.lineno, t.lexpos, 'lexer', self.data
+                ))
+                return None
+            
             self.indent_stack.append(indent_level)
             t.type = 'INDENT'
             t.value = ''
@@ -252,7 +278,10 @@ class Lexer:
             # Check if indentation level matches any previous level
             if not self.indent_stack or self.indent_stack[-1] != indent_level:
                 # Invalid indentation level
-                self.errors.append(Error(f"Invalid indentation level", t.lineno, t.lexpos, 'lexer', self.data))
+                self.errors.append(Error(
+                    f"Invalid indentation level: expected one of {self.indent_stack} spaces, got {indent_level}",
+                    t.lineno, t.lexpos, 'lexer', self.data
+                ))
                 return None
             
             # Create DENT tokens
@@ -264,7 +293,7 @@ class Lexer:
                 dent_token.lexpos = t.lexpos
                 self.pending_tokens.append(dent_token)
         
-        # Same indentation level
+        # Same indentation level - no token needed
         return None
 
     def t_error(self, t):
@@ -281,4 +310,5 @@ class Lexer:
         self.indent_stack = [0]
         self.pending_tokens = []
         self.start = True
+        self.current_line_indent = 0
         self.lex.input(data)
