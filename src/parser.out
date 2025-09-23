@@ -1,0 +1,198 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    BREAK
+    CLASS
+    CONTINUE
+    DENT
+    DOT
+    ELIF
+    ELSE
+    FOR
+    IF
+    IN
+    INDENT
+    ITER
+    LBRACE
+    LBRACKET
+    NEXT
+    PASS
+    PRINT
+    RANGE
+    RBRACE
+    RBRACKET
+    RETURN
+    SEMICOLON
+    WHILE
+
+Grammar
+
+Rule 0     S' -> program
+Rule 1     program -> complete_sentence program
+Rule 2     program -> complete_sentence
+Rule 3     complete_sentence -> sentence optional_newline
+Rule 4     sentence -> operation
+Rule 5     sentence -> function
+Rule 6     sentence -> function_call
+Rule 7     sentence -> class
+Rule 8     complete_sentences -> complete_sentences complete_sentence
+Rule 9     complete_sentences -> complete_sentence
+Rule 10    empty -> <empty>
+Rule 11    optional_newline -> NEWLINE
+Rule 12    optional_newline -> empty
+Rule 13    data_type -> ID
+Rule 14    data_type -> INTEGER
+Rule 15    data_type -> FLOAT
+Rule 16    data_type -> STRING
+Rule 17    data_type -> MULTISTRING
+Rule 18    data_type -> NONE
+Rule 19    number -> INTEGER
+Rule 20    number -> FLOAT
+Rule 21    text -> STRING
+Rule 22    text -> MULTISTRING
+Rule 23    text -> number_to_string
+Rule 24    arithmetic_symbol -> PLUS
+Rule 25    arithmetic_symbol -> MINUS
+Rule 26    arithmetic_symbol -> MUL
+Rule 27    arithmetic_symbol -> DIV
+Rule 28    arithmetic_symbol -> INT_DIV
+Rule 29    arithmetic_symbol -> MOD
+Rule 30    arithmetic_symbol -> POW
+Rule 31    assignment_symbol -> ASSIGN
+Rule 32    assignment_symbol -> ADD_ASSIGN
+Rule 33    assignment_symbol -> SUB_ASSIGN
+Rule 34    assignment_symbol -> MUL_ASSIGN
+Rule 35    assignment_symbol -> DIV_ASSIGN
+Rule 36    assignment_symbol -> MOD_ASSIGN
+Rule 37    assignment_symbol -> INT_DIV_ASSIGN
+Rule 38    assignment_symbol -> POW_ASSIGN
+Rule 39    relational_symbol -> EQUAL
+Rule 40    relational_symbol -> NOT_EQUAL
+Rule 41    relational_symbol -> GREATER
+Rule 42    relational_symbol -> LESS
+Rule 43    relational_symbol -> GREATER_EQUAL
+Rule 44    relational_symbol -> LESS_EQUAL
+Rule 45    logical_operator -> AND
+Rule 46    logical_operator -> NOT
+Rule 47    logical_operator -> OR
+Rule 48    conditional_operator -> TRUE
+Rule 49    conditional_operator -> FALSE
+Rule 50    number_to_string -> STR LPAREN number RPAREN
+Rule 51    assignment_operation -> ID assignment_symbol data_type
+Rule 52    arithmetic_operation -> arithmetic_operation arithmetic_symbol arithmetic_operation
+Rule 53    arithmetic_operation -> LPAREN arithmetic_operation RPAREN
+Rule 54    arithmetic_operation -> number
+Rule 55    relational_operation -> ID relational_symbol ID
+Rule 56    relational_operation -> number relational_symbol number
+Rule 57    relational_operation -> text relational_symbol text
+Rule 58    operation -> relational_operation
+Rule 59    operation -> arithmetic_operation
+Rule 60    operation -> assignment_operation
+Rule 61    argument -> ID
+Rule 62    argument -> data_type
+Rule 63    argument -> ID COLON data_type
+Rule 64    argument -> SELF
+Rule 65    arguments -> argument
+Rule 66    arguments -> arguments COMMA argument
+Rule 67    arguments -> empty
+Rule 68    function_call -> ID LPAREN arguments RPAREN
+Rule 69    class_constructor -> DEF __INIT__ LPAREN arguments RPAREN COLON
+Rule 70    class -> <empty>
+
+Terminals, with rules where they appear
+
+ADD_ASSIGN           : 32
+AND                  : 45
+ASSIGN               : 31
+BREAK                : 
+CLASS                : 
+COLON                : 63 69
+COMMA                : 66
+CONTINUE             : 
+DEF                  : 69
+DENT                 : 
+DIV                  : 27
+DIV_ASSIGN           : 35
+DOT                  : 
+ELIF                 : 
+ELSE                 : 
+EQUAL                : 39
+FALSE                : 49
+FLOAT                : 15 20
+FOR                  : 
+GREATER              : 41
+GREATER_EQUAL        : 43
+ID                   : 13 51 55 55 61 63 68
+IF                   : 
+IN                   : 
+INDENT               : 
+INTEGER              : 14 19
+INT_DIV              : 28
+INT_DIV_ASSIGN       : 37
+ITER                 : 
+LBRACE               : 
+LBRACKET             : 
+LESS                 : 42
+LESS_EQUAL           : 44
+LPAREN               : 50 53 68 69
+MINUS                : 25
+MOD                  : 29
+MOD_ASSIGN           : 36
+MUL                  : 26
+MULTISTRING          : 17 22
+MUL_ASSIGN           : 34
+NEWLINE              : 11
+NEXT                 : 
+NONE                 : 18
+NOT                  : 46
+NOT_EQUAL            : 40
+OR                   : 47
+PASS                 : 
+PLUS                 : 24
+POW                  : 30
+POW_ASSIGN           : 38
+PRINT                : 
+RANGE                : 
+RBRACE               : 
+RBRACKET             : 
+RETURN               : 
+RPAREN               : 50 53 68 69
+SELF                 : 64
+SEMICOLON            : 
+STR                  : 50
+STRING               : 16 21
+SUB_ASSIGN           : 33
+TRUE                 : 48
+WHILE                : 
+__INIT__             : 69
+error                : 
+
+Nonterminals, with rules where they appear
+
+argument             : 65 66
+arguments            : 66 68 69
+arithmetic_operation : 52 52 53 59
+arithmetic_symbol    : 52
+assignment_operation : 60
+assignment_symbol    : 51
+class                : 7
+class_constructor    : 
+complete_sentence    : 1 2 8 9
+complete_sentences   : 8
+conditional_operator : 
+data_type            : 51 62 63
+empty                : 12 67
+function             : 5
+function_call        : 6
+logical_operator     : 
+number               : 50 54 56 56
+number_to_string     : 23
+operation            : 4
+optional_newline     : 3
+program              : 1 0
+relational_operation : 58
+relational_symbol    : 55 56 57
+sentence             : 3
+text                 : 57 57
+
