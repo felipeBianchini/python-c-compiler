@@ -2,7 +2,6 @@ import ply.lex as lex
 from src.utils import Error
 from src.symbol_table import SymbolTable
 
-
 class Lexer:
     def __init__(self, errors: list[Error], debug=False):
         self.lex = None
@@ -23,7 +22,8 @@ class Lexer:
 
     reserved = (
         'IF', 'ELSE', 'ELIF', 'WHILE', 'FOR', 'BREAK', 'CONTINUE', 'PASS', 'DEF', 'RETURN',
-        'CLASS', 'AND', 'OR', 'NOT', '__INIT__', 'SELF', 'IN', 'RANGE', 'ITER', 'NEXT', 'PRINT'
+        'CLASS', 'AND', 'OR', 'NOT', '__INIT__', 'SELF', 'IN', 'RANGE', 'ITER', 'NEXT', 'PRINT',
+        'STR'
     )
 
     tokens = reserved + (
@@ -46,7 +46,10 @@ class Lexer:
         'LPAREN', 'RPAREN', 'LBRACKET', 'RBRACKET', 'LBRACE', 'RBRACE', 'COMMA', 'SEMICOLON', 'COLON', 'DOT',
         
         # Indentation
-        'INDENT', 'DENT', 'NEWLINE'
+        'INDENT', 'DENT', 'NEWLINE',
+
+        # Others
+        'NONE',
     )
 
     # Regular expression rules for simple tokens
@@ -147,6 +150,11 @@ class Lexer:
     def t_TRUE(self, t):
         r'True'
         t.value = bool(t.value)
+        return t
+
+    def t_NONE(self, t):
+        r'None'
+        t.value = None
         return t
 
     def t_FALSE(self, t):
