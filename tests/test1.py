@@ -1,6 +1,9 @@
-def a(a, b, c):
-    a = 2
-    b = 3
-    c = 4
-a(1,2,3)
-a(None, None, None)
+class Persona:
+    def __init__(self, nombre):
+        self.nombre = nombre
+
+    def saludar(self):
+        return "Hola " + self.nombre
+
+    def saludar(self):
+        pass

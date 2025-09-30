@@ -19,7 +19,7 @@ while True:
         break # End while when the lexer returns a null
     val = str(token.value)
     val = val.replace("\n", " \\n ") # \n replaced for reading purposes
-    #print(f"{token.type}: {val} (line {token.lineno})")
+    print(f"{token.type}: {val} (line {token.lineno})")
 
 # Check for errors
 if errors:
