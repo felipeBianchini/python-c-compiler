@@ -98,7 +98,8 @@ class Lexer:
         
         # Check for dedentation when we encounter a non-space token at start of line
         if tok and self.start and tok.type not in ('NEWLINE', 'INDENT', 'DENT'):
-            self.handle_dedentation()
+            if not self.pending_tokens: 
+                self.handle_dedentation()
             self.start = False
             
             # Return pending tokens if any were generated
@@ -247,7 +248,6 @@ class Lexer:
 
     def handle_indentation(self, t):
         # Handle indentation changes and generate appropriate tokens
-        self.start = False
         
         # Calculate indentation level (convert tabs to 4 spaces)
         indent_level = len(t.value.expandtabs(4))
@@ -272,6 +272,7 @@ class Lexer:
                 return None
             
             self.indent_stack.append(indent_level)
+            self.start = False  # Only set to False when returning a token
             t.type = 'INDENT'
             t.value = ''
             return t
@@ -300,8 +301,10 @@ class Lexer:
                 dent_token.lineno = t.lineno
                 dent_token.lexpos = t.lexpos
                 self.pending_tokens.append(dent_token)
+            
+        else:
+            self.start = False
         
-        # Same indentation level - no token needed
         return None
 
     def t_error(self, t):
