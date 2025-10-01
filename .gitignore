@@ -1,2 +1,4 @@
 __pycache__
 *.out
+parsetab.py
+parser.out
