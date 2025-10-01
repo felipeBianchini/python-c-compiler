@@ -22,14 +22,20 @@ class Parser:
     #########################
 
     def p_program(self, p):
-        '''program : complete_sentence program
-                   | complete_sentence
+        '''program : statement_list
         '''
         print(">> program")
+        p[0] = p[1]
+
+    def p_statement_list(self, p):
+        '''statement_list : statement_list complete_sentence
+                        | complete_sentence
+        '''
+        print(">> statement_list")
         if len(p) == 2:
             p[0] = [p[1]]
         else:
-            p[0] = [p[1]] + p[2]
+            p[0] = p[1] + [p[2]]
 
     #########################
     #   OTHER PRODUCTIONS   #
@@ -295,7 +301,7 @@ class Parser:
         p[0] = p[1]
 
     def p_function(self, p):
-        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return DENT'''
+        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT'''
         print(">> function")
         p[0] = ("function", p[2], p[4], p[9], p[10])
 
@@ -319,11 +325,11 @@ class Parser:
         p[0] = ("class atribute use", p[1], p[3])
 
     def p_class_method(self, p):
-        '''class_method : DEF __INIT__ LPAREN class_arguments RPAREN COLON NEWLINE INDENT complete_sentences DENT
-                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return DENT
+        '''class_method : DEF __INIT__ LPAREN class_arguments RPAREN COLON NEWLINE INDENT complete_sentences optional_newline DENT
+                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT
         '''
         print(">> class_method")
-        if len(p) == 11:
+        if len(p) == 13:
             p[0] = ("class method", p[2], p[4], p[9])
         else: 
             p[0] = ("class method", p[2], p[4], p[9], p[10])
@@ -345,7 +351,7 @@ class Parser:
             p[0] = p[1] + [p[2]]
 
     def p_class(self, p):
-        '''class : CLASS ID COLON NEWLINE INDENT class_body DENT'''
+        '''class : CLASS ID COLON NEWLINE INDENT class_body optional_newline DENT'''
         print(">> class")
         p[0] = ('class', p[2], p[6])
 

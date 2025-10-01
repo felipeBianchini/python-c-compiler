@@ -107,7 +107,18 @@ class Lexer:
                 # Put the current token back and return pending token
                 self.pending_tokens.append(tok)
                 return self.pending_tokens.pop(0)
-        
+        elif not tok:
+            while len(self.indent_stack) > 1:
+                self.indent_stack.pop()
+                dent_token = lex.LexToken()
+                dent_token.type = 'DENT'
+                dent_token.value = ''
+                dent_token.lineno = self.lex.lineno
+                dent_token.lexpos = self.lex.lexpos
+                self.pending_tokens.append(dent_token)
+            self.pending_tokens.append(tok)
+            return self.pending_tokens.pop(0)
+
         return tok
 
     def handle_dedentation(self):
