@@ -1,2 +1,1 @@
-
-lexer.input(source_code)
+, debug=True

@@ -77,10 +77,17 @@ class Parser:
     # referentiable data types
     def p_ref_data_type(self, p):
         '''ref_data_type : ID
-                         | class_atribute_use         
+                         | objects_use         
         ''' 
         print(">> ref_data_type")
         p[0] = p[1]
+
+    # for the use of objects
+    # object.data
+    def p_objects_use(self, p):
+        'objects_use : ID DOT ID'
+        print(">> objects_use")
+        p[0] = ("class atribute use", p[1], p[3])
 
     # numbers
     def p_number(self, p):
@@ -141,6 +148,7 @@ class Parser:
     ################################
 
     # TODO: Add for, while, if
+    # for a sentence, includes basically everything that can be done
     def p_sentence(self, p):
         '''sentence : function
                     | class
@@ -149,6 +157,16 @@ class Parser:
         '''
         print(">> sentence")
         p[0] = p[1]
+
+    # recursive rule for a group of sentences
+    def p_sentences(self, p):
+        '''sentences : sentence optional_newline
+                     | sentences sentence optional_newline
+        '''
+        if len(p) == 3:
+            p[0] = [p[1]]
+        else:
+            p[0] = p[1] + [p[2]]
 
     #############################################
     #   PRODUCTIONS FOR SINGLE LINE OPERATIONS  #
@@ -273,7 +291,7 @@ class Parser:
     # works for simple, normal function calls and function calls inside classes
     def p_function_call(self, p):
         '''function_call : ID LPAREN arguments RPAREN
-                         | class_atribute_use LPAREN arguments RPAREN
+                         | objects_use LPAREN arguments RPAREN
         '''
         print(">> function_call")
         p[0] = ("function_call", p[1], p[3])
@@ -290,24 +308,29 @@ class Parser:
         else:
             p[0] = ('return expression', p[2])
     
+    # for optional returns
+    def p_optional_return(self, p):
+        '''optional_return : return
+                           | empty
+        '''
+        p[0] = p[1]
+
     # recursive rule for function body
-    # take sinto account that not all functions have a body and not all functions have returns
+    # takes into account that not all functions have a body and not all functions have returns
     def p_function_body(self, p):
-        '''function_body : function_body sentence return
-                         | function_body sentence
-                         | sentence
-                         | return
+        '''function_body : sentences optional_return NEWLINE
+                         | return NEWLINE
+                         | PASS NEWLINE
         '''
         print(">> function_body")
-        if len(p) == 3:
+        if len(p) == 4:
             p[0] = ('complete function body', p[1], p[2])
         else:
             p[0] = ('incomplete function body', p[1])
 
     # for functions
-    # TODO: WTF with the DENT token )?????
     def p_function(self, p):
-        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT function_body NEWLINE DENT
+        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT function_body DENT
         '''
         print(">> function")
         p[0] = ("function", p[2], p[4], p[9])
@@ -316,51 +339,16 @@ class Parser:
     #   PRODUCTIONS FOR CLASSES   #
     ###############################
 
-    # TODO: TEST CLASSES
-
-    def p_class_arguments(self, p):
-        ''' class_arguments : SELF COMMA arguments
-                            | SELF
-        '''
-        print(">> class_arguments")
-        if len(p) == 4:
-            p[0] = ["self"] + p[3]
-        else:
-            p[0] = ["self"]
-
-    def p_class_atribute_use(self, p):
-        'class_atribute_use : SELF DOT ID'
-        print(">> class_atribute_use")
-        p[0] = ("class atribute use", p[1], p[3])
-
-    def p_class_method(self, p):
-        '''class_method : DEF __INIT__ LPAREN class_arguments RPAREN COLON NEWLINE INDENT function_body DENT
-                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT function_body DENT
-        '''
-        print(">> class_method")
-        if len(p) == 13:
-            p[0] = ("class method", p[2], p[4], p[9])
-        else: 
-            p[0] = ("class method", p[2], p[4], p[9], p[10])
-
-    def p_class_part(self, p):
-        '''class_part : class_method
-        '''
-        print(">> class_part")
-        p[0] = p[1]
-
+    # for the body of a class
     def p_class_body(self, p):
-        '''class_body : class_body class_part
-                     | class_part
+        '''class_body : sentences
         '''
         print(">> class_body")
-        if len(p) == 2:
-            p[0] = [p[1]]
-        else:
-            p[0] = p[1] + [p[2]]
+        p[0] = p[1]
 
+    # for complete classes
     def p_class(self, p):
-        '''class : CLASS ID COLON NEWLINE INDENT class_body optional_newline DENT'''
+        '''class : CLASS ID COLON NEWLINE INDENT class_body DENT'''
         print(">> class")
         p[0] = ('class', p[2], p[6])
 

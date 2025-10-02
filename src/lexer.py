@@ -22,7 +22,7 @@ class Lexer:
 
     reserved = (
         'IF', 'ELSE', 'ELIF', 'WHILE', 'FOR', 'BREAK', 'CONTINUE', 'PASS', 'DEF', 'RETURN',
-        'CLASS', 'AND', 'OR', 'NOT', '__INIT__', 'SELF', 'IN', 'RANGE', 'ITER', 'NEXT', 'PRINT',
+        'CLASS', 'AND', 'OR', 'NOT', 'IN', 'RANGE', 'ITER', 'NEXT', 'PRINT',
         'STR'
     )
 

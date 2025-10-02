@@ -1,3 +1,4 @@
+from re import DEBUG
 from src.lexer import Lexer
 from src.parser import Parser
 from src.utils import Error
