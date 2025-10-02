@@ -175,28 +175,48 @@ class Parser:
 
     # Expresiones que retornan valores
     def p_expression(self, p):
-        '''expression : 
+        '''expression : ret_value_operation
                       | string_concat
                       | function_call
-                      | data_type
         '''
         print(f">> expression: {p[1]}")
         p[0] = p[1]
 
-    def p_logical_expression(self, p):
-        '''logical_expression : logical_expression 
+    def p_ret_value_operation(self, p):
+        '''ret_value_operation : ret_value_operation arithmetic_symbol ret_value_operation
+                            | ret_value_operation binary_logical_operator ret_value_operation
+                            | ret_value_operation relational_symbol ret_value_operation
+                            | LPAREN ret_value_operation RPAREN
+                            | NOT ret_value_operation
+                            | number
+                            | ref_data_type
+                            | data_type
         '''
-        if len(p) == 2:
-            print(f">> logical_expression (simple): {p[1]}")
-            p[0] = p[1]
-        else:
-            print(f">> logical_expression (OR): {p[1]} OR {p[3]}")
-            p[0] = ('or', p[1], p[3])
+        print(">> ret_value_operation")
 
-    def p_comparison_expression(self, p):
-        ''' comparison_operation : comparison_operation relational_symbol expression
-                                 | LPAREN comparison_operation RPAREN
-        '''
+        if len(p) == 2:
+            # Casos atómicos
+            p[0] = p[1]
+
+        elif len(p) == 3:
+            # Caso unario: NOT ret_value_operation
+            p[0] = ("unary_operation", "NOT", p[2])
+
+        elif len(p) == 4:
+            if p[1] == '(':
+                # Caso ( expr )
+                p[0] = p[2]
+            else:
+                # Casos binarios
+                operator = p[2]
+                if operator in ('+', '-', '*', '/'):
+                    p[0] = ("arithmetic_operation", p[1], operator, p[3])
+                elif operator in ('AND', 'OR', 'XOR'):  # según tus operadores lógicos
+                    p[0] = ("logical_operation", p[1], operator, p[3])
+                elif operator in ('==', '!=', '<', '>', '<=', '>='):
+                    p[0] = ("relational_operation", p[1], operator, p[3])
+                else:
+                    p[0] = ("unknown_operation", p[1], operator, p[3])
 
     ###################################################
     #   PRODUCTIONS FOR STRING OPERATIONS AND PRINTS  #
