@@ -14,5 +14,5 @@ lexer.input(source_code)
 
 # Create Parser
 parser = Parser()
-result = parser.parser.parse(source_code, lexer=lexer.lex)
+result = parser.parser.parse(source_code, lexer=lexer)
 print(result)

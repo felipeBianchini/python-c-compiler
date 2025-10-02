@@ -307,7 +307,7 @@ class Parser:
     # for functions
     # TODO: WTF with the DENT token )?????
     def p_function(self, p):
-        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT function_body NEWLINE 
+        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT function_body NEWLINE DENT
         '''
         print(">> function")
         p[0] = ("function", p[2], p[4], p[9])
