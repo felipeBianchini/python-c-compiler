@@ -146,7 +146,6 @@ class Parser:
     def p_sentence(self, p):
         '''sentence : function
                     | class
-                    | return
                     | function_call
                     | operation
         '''
@@ -277,8 +276,8 @@ class Parser:
         p[0] = ("function_call", p[1], p[3])
 
     def p_return(self, p):
-        '''return : RETURN
-                  | RETURN data_type
+        '''return : RETURN data_type
+                  | RETURN 
         '''
         print(">> return")
         if len(p) == 2:
@@ -301,7 +300,9 @@ class Parser:
         p[0] = p[1]
 
     def p_function(self, p):
-        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT'''
+        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT
+                    | DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return DENT
+        '''
         print(">> function")
         p[0] = ("function", p[2], p[4], p[9], p[10])
 
@@ -327,6 +328,7 @@ class Parser:
     def p_class_method(self, p):
         '''class_method : DEF __INIT__ LPAREN class_arguments RPAREN COLON NEWLINE INDENT complete_sentences optional_newline DENT
                         | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT
+                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return DENT
         '''
         print(">> class_method")
         if len(p) == 13:
