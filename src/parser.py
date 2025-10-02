@@ -28,14 +28,14 @@ class Parser:
         p[0] = p[1]
 
     def p_statement_list(self, p):
-        '''statement_list : statement_list complete_sentence
-                        | complete_sentence
+        '''statement_list : statement_list sentence optional_newline
+                          | sentence optional_newline
         '''
         print(">> statement_list")
-        if len(p) == 2:
+        if len(p) == 3:
             p[0] = [p[1]]
         else:
-            p[0] = p[1] + [p[2]]
+            p[0] = [p[1]] + [p[2]]
 
     #########################
     #   OTHER PRODUCTIONS   #
@@ -66,12 +66,11 @@ class Parser:
     ############################################
 
     def p_data_type(self, p):
-        '''data_type : ret_value_operation
-                     | string_concat
-                     | function_call
-                     | NONE
+        '''data_type : NONE
+                     | TRUE
+                     | FALSE
         '''
-        print(">> data_type")
+        print(f">> data_type: {p[1]}")
         p[0] = p[1]
 
     def p_ref_data_type(self, p):
@@ -152,21 +151,6 @@ class Parser:
         print(">> sentence")
         p[0] = p[1]
 
-    def p_complete_sentence(self, p):
-        'complete_sentence : sentence'
-        print(">> complete_sentence")
-        p[0] = p[1]
-
-    def p_complete_sentences(self, p):
-        '''complete_sentences : complete_sentence complete_sentences
-                              | complete_sentence            
-        '''
-        print(">> complete_sentences")
-        if len(p) == 2:
-            p[0] = [p[1]]
-        else:
-            p[0] = [p[1]] + p[2]
-
     #############################################
     #   PRODUCTIONS FOR SINGLE LINE OPERATIONS  #
     #############################################
@@ -179,7 +163,7 @@ class Parser:
         p[0] = p[1]
 
     def p_simple_assignment_operation(self, p):
-        '''simple_assignment_operation : ref_data_type ASSIGN data_type
+        '''simple_assignment_operation : ref_data_type ASSIGN expression
         '''
         print(">> simple_assignment_operation")
         p[0] = ("simple assignment operation", p[1], p[2], p[3])
@@ -189,39 +173,30 @@ class Parser:
         print(">> assignment_operation")
         p[0] = ("assignment operation", p[1], p[2], p[3])
 
-    def p_ret_value_operation(self, p):
-        '''ret_value_operation : ret_value_operation arithmetic_symbol ret_value_operation
-                               | ret_value_operation binary_logical_operator ret_value_operation
-                               | LPAREN ret_value_operation RPAREN
-                               | NOT ret_value_operation
-                               | number
-                               | ref_data_type
+    # Expresiones que retornan valores
+    def p_expression(self, p):
+        '''expression : 
+                      | string_concat
+                      | function_call
+                      | data_type
         '''
-        print(">> ret_value_operation")
-        if len(p) == 2:
-            p[0] = p[1]
-        elif len(p) == 4 and p[1] == '(':
-            p[0] = p[2]
-        else:
-            p[0] = ("arithmetic operation", p[1], p[2], p[3])
-
-    def p_relational_operation(self, p):
-        '''relational_operation : LPAREN relational_operation RPAREN
-                                | data_type relational_symbol data_type
-        '''
-        print(">> relational_operation")
-        if len(p) == 4 and p[1] == '(':
-            p[0] = p[2]
-        else:
-            p[0] = ("relational operation", p[1], p[2], p[3])
-
-    def p_term(self, p):
-        '''term : relational_operation
-                | ref_data_type
-                | conditional_operator
-        '''
-        print(">> term")
+        print(f">> expression: {p[1]}")
         p[0] = p[1]
+
+    def p_logical_expression(self, p):
+        '''logical_expression : logical_expression 
+        '''
+        if len(p) == 2:
+            print(f">> logical_expression (simple): {p[1]}")
+            p[0] = p[1]
+        else:
+            print(f">> logical_expression (OR): {p[1]} OR {p[3]}")
+            p[0] = ('or', p[1], p[3])
+
+    def p_comparison_expression(self, p):
+        ''' comparison_operation : comparison_operation relational_symbol expression
+                                 | LPAREN comparison_operation RPAREN
+        '''
 
     ###################################################
     #   PRODUCTIONS FOR STRING OPERATIONS AND PRINTS  #
@@ -247,8 +222,8 @@ class Parser:
     ##############################################################
     
     def p_argument(self, p):
-        '''argument : data_type
-                    | ID COLON data_type
+        '''argument : expression
+                    | ID COLON expression
         '''
         print(">> argument")
         if len(p) == 2:
@@ -276,35 +251,32 @@ class Parser:
         p[0] = ("function_call", p[1], p[3])
 
     def p_return(self, p):
-        '''return : RETURN data_type
+        '''return : RETURN expression
                   | RETURN 
         '''
         print(">> return")
         if len(p) == 2:
             p[0] = ('return', None)
         else:
-            p[0] = ('return', p[2])
-
-    def p_optional_return(self, p):
-        '''optional_return : return
-                           | empty
-        '''
-        print(">> optional_return")
-        p[0] = p[1]
+            p[0] = ('return expression', p[2])
     
-    def p_optional_function_body(self, p):
-        '''optional_function_body : complete_sentences
-                                  | empty
+    def p_function_body(self, p):
+        '''function_body : function_body sentence return
+                         | function_body sentence
+                         | sentence
+                         | return
         '''
-        print(">> optional_function_body")
-        p[0] = p[1]
+        print(">> function_body")
+        if len(p) == 3:
+            p[0] = ('complete function body', p[1], p[2])
+        else:
+            p[0] = ('incomplete function body', p[1])
 
     def p_function(self, p):
-        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT
-                    | DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return DENT
+        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT function_body NEWLINE DENT
         '''
         print(">> function")
-        p[0] = ("function", p[2], p[4], p[9], p[10])
+        p[0] = ("function", p[2], p[4], p[9])
 
     ###############################
     #   PRODUCTIONS FOR CLASSES   #
@@ -326,9 +298,8 @@ class Parser:
         p[0] = ("class atribute use", p[1], p[3])
 
     def p_class_method(self, p):
-        '''class_method : DEF __INIT__ LPAREN class_arguments RPAREN COLON NEWLINE INDENT complete_sentences optional_newline DENT
-                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return optional_newline DENT
-                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT optional_function_body optional_return DENT
+        '''class_method : DEF __INIT__ LPAREN class_arguments RPAREN COLON NEWLINE INDENT function_body DENT
+                        | DEF ID LPAREN class_arguments RPAREN COLON NEWLINE INDENT function_body DENT
         '''
         print(">> class_method")
         if len(p) == 13:

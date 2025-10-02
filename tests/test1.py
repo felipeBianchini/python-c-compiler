@@ -1,5 +1,6 @@
-def a():
-    return 1
+a = "a" + str(2) + '''peneee'''
+b = not ((True) or (2 < 3))
+c = 2 + 3 * 4
+d = 1 + (1 > 2)
 
-def b():
-    return 2
+"a" > "b"
