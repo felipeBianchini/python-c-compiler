@@ -154,6 +154,8 @@ class Parser:
                     | class
                     | function_call
                     | operation
+                    | conditional
+                    | print
         '''
         print(">> sentence")
         p[0] = p[1]
@@ -167,6 +169,12 @@ class Parser:
             p[0] = [p[1]]
         else:
             p[0] = p[1] + [p[2]]
+    
+    def p_print(self, p):
+        '''print : PRINT LPAREN expression RPAREN
+        '''
+        print(">> print")
+        p[0] = [p[3]]
 
     #############################################
     #   PRODUCTIONS FOR SINGLE LINE OPERATIONS  #
@@ -218,7 +226,7 @@ class Parser:
                                | ref_data_type
                                | data_type
         '''
-        print(">> ret_value_operation")
+        print(">> ret_value_operation ")
         if len(p) == 2:
             p[0] = p[1]
         elif len(p) == 3:
@@ -334,6 +342,43 @@ class Parser:
         '''
         print(">> function")
         p[0] = ("function", p[2], p[4], p[9])
+
+    ################################
+    # PRODUCTIONS FOR IF-ELIF-ELSE #
+    ################################
+
+    def p_conditional(self, p):
+        '''conditional : if_elif else_clause
+                       | if_elif
+        '''
+
+    def p_if_elif(self, p):
+        '''if_elif : if_elif elif_clause INDENT function_body NEWLINE DENT
+                   | if_clause INDENT function_body NEWLINE DENT
+        '''
+        print(">> if_elif")
+        if len(p) == 4:
+            p[0] = (p[1], p[2])
+        else:
+            p[0] = (p[1], p[2], p[4], p[5])
+    
+    def p_if(self, p):
+        '''if_clause : IF ret_value_operation COLON NEWLINE
+        '''
+        print(">> if_clause")
+        p[0] = (p[2])
+
+    def p_elif(self, p):
+        '''elif_clause : ELIF ret_value_operation COLON NEWLINE
+        '''
+        print(">> elif_clause")
+        p[0] = (p[2])
+
+    def p_else(self, p):
+        '''else_clause : ELSE COLON NEWLINE INDENT function_body NEWLINE DENT
+        '''
+        print(">> else_clause")
+        p[0] = (p[4])
 
     ###############################
     #   PRODUCTIONS FOR CLASSES   #
