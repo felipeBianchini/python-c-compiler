@@ -50,7 +50,10 @@ class Parser:
         '''optional_newline : optional_newline NEWLINE
                             | NEWLINE
                             | empty'''
-        print(">> optional_newline")
+        if '\n' == p[1]:
+            print(">> optional_newline (Real)")
+        else:
+            print(">> optional_newline (Empty)")
         p[0] = None
 
     def p_error(self, p):
@@ -173,7 +176,7 @@ class Parser:
     def p_print(self, p):
         '''print : PRINT LPAREN expression RPAREN
         '''
-        print(">> print")
+        print(f">> print {p[3]}")
         p[0] = [p[3]]
 
     #############################################
@@ -343,42 +346,70 @@ class Parser:
         print(">> function")
         p[0] = ("function", p[2], p[4], p[9])
 
+    def p_block_body(self, p):
+        '''block_body : sentences optional_return
+                    | return
+                    | PASS
+        '''
+        print(">> block_body")
+        if len(p) == 3:
+            p[0] = ('complete block body', p[1], p[2])
+        else:
+            p[0] = ('incomplete block body', p[1])
+
     ################################
     # PRODUCTIONS FOR IF-ELIF-ELSE #
     ################################
 
     def p_conditional(self, p):
-        '''conditional : if_elif else_clause
-                       | if_elif
+        '''conditional : if_clause INDENT block_body DENT elif_list else_clause
+                    | if_clause INDENT block_body DENT elif_list
+                    | if_clause INDENT block_body DENT else_clause
+                    | if_clause INDENT block_body DENT
         '''
-
-    def p_if_elif(self, p):
-        '''if_elif : if_elif elif_clause INDENT function_body NEWLINE DENT
-                   | if_clause INDENT function_body NEWLINE DENT
-        '''
-        print(">> if_elif")
-        if len(p) == 4:
-            p[0] = (p[1], p[2])
+        print(f">> conditional")
+        if len(p) == 5:
+            # Just if
+            p[0] = ('conditional', ('if', p[1], p[3]))
+        elif len(p) == 6:
+            # if + elif(s) OR if + else
+            p[0] = ('conditional', ('if', p[1], p[3]), p[5])
         else:
-            p[0] = (p[1], p[2], p[4], p[5])
-    
-    def p_if(self, p):
+            # if + elif(s) + else
+            p[0] = ('conditional', ('if', p[1], p[3]), p[5], p[6])
+
+    def p_elif_list(self, p):
+        '''elif_list : elif_list elif_clause INDENT block_body DENT
+                    | elif_clause INDENT block_body DENT
+        '''
+        print(">> elif_list")
+        if len(p) == 5:
+            # Single elif
+            p[0] = ('elif_list', [('elif', p[1], p[3])])
+        else:
+            # Multiple elifs
+            if p[1][0] == 'elif_list':
+                p[0] = ('elif_list', p[1][1] + [('elif', p[2], p[4])])
+            else:
+                p[0] = ('elif_list', [p[1], ('elif', p[2], p[4])])
+
+    def p_if_clause(self, p):
         '''if_clause : IF ret_value_operation COLON NEWLINE
         '''
         print(">> if_clause")
-        p[0] = (p[2])
+        p[0] = p[2]
 
-    def p_elif(self, p):
+    def p_elif_clause(self, p):
         '''elif_clause : ELIF ret_value_operation COLON NEWLINE
         '''
         print(">> elif_clause")
-        p[0] = (p[2])
+        p[0] = p[2]
 
-    def p_else(self, p):
-        '''else_clause : ELSE COLON NEWLINE INDENT function_body NEWLINE DENT
+    def p_else_clause(self, p):
+        '''else_clause : ELSE COLON NEWLINE INDENT block_body DENT
         '''
         print(">> else_clause")
-        p[0] = (p[4])
+        p[0] = ('else', p[5])
 
     ###############################
     #   PRODUCTIONS FOR CLASSES   #
