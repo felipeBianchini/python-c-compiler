@@ -50,7 +50,7 @@ class Parser:
         '''optional_newline : optional_newline NEWLINE
                             | NEWLINE
                             | empty'''
-        if '\n' == p[1]:
+        if len(p) > 1 and p[1] == '\n':
             print(">> optional_newline (Real)")
         else:
             print(">> optional_newline (Empty)")
@@ -108,6 +108,40 @@ class Parser:
         print(">> string")
         p[0] = p[1]
 
+    def p_list(self, p):
+        '''list : ret_value_operation
+                | list COMMA string
+                | list COMMA number
+                | list COMMA data_type
+        '''
+        if len(p) == 2:
+            print(f">> list {p[1]}")
+        else:
+            print(f">> list {p[1]}, {p[3]}")
+            if type(p[1]) != list:
+                p[1] = [p[1]]
+            p[1].append(p[3])
+        
+        p[0] = p[1]
+    
+    def p_array(self, p):
+        '''array : LBRACKET list RBRACKET
+        '''
+        print(f">> array {p[2]}")
+        p[0] = p[2]
+
+    def p_set(self, p):
+        '''set : LBRACE list RBRACE
+        '''
+        print(f">> set {p[2]}")
+        p[0] = p[2]
+
+    def p_tuple(self, p):
+        '''tuple : LPAREN list RPAREN
+        '''
+        print(f">> tuple {p[2]}")
+        p[0] = p[2]
+
     def p_arithmetic_symbol(self, p):
         '''arithmetic_symbol : PLUS 
                              | MINUS
@@ -159,6 +193,7 @@ class Parser:
                     | operation
                     | conditional
                     | print
+                    | loop
         '''
         print(">> sentence")
         p[0] = p[1]
@@ -188,12 +223,19 @@ class Parser:
     def p_operation(self, p):
         '''operation : assignment_operation 
                      | simple_assignment_operation 
+                     | array_assignment
         '''
         print(">> operation")
         p[0] = p[1]
 
-    # assignment operation that only involves =
-    # only referentiable data can be assigned a value
+    def p_assign_array(self, p):
+        '''array_assignment : ref_data_type ASSIGN array
+                            | ref_data_type ASSIGN tuple
+                            | ref_data_type ASSIGN set
+        '''
+        print(">> array_assignment")
+        p[0] = ("array assignment", p[1], p[2], p[3])
+
     def p_simple_assignment_operation(self, p):
         '''simple_assignment_operation : ref_data_type ASSIGN expression
         '''
@@ -348,8 +390,8 @@ class Parser:
 
     def p_block_body(self, p):
         '''block_body : sentences optional_return
-                    | return
-                    | PASS
+                      | return
+                      | PASS
         '''
         print(">> block_body")
         if len(p) == 3:
@@ -363,9 +405,9 @@ class Parser:
 
     def p_conditional(self, p):
         '''conditional : if_clause INDENT block_body DENT elif_list else_clause
-                    | if_clause INDENT block_body DENT elif_list
-                    | if_clause INDENT block_body DENT else_clause
-                    | if_clause INDENT block_body DENT
+                       | if_clause INDENT block_body DENT elif_list
+                       | if_clause INDENT block_body DENT else_clause
+                       | if_clause INDENT block_body DENT
         '''
         print(f">> conditional")
         if len(p) == 5:
@@ -380,7 +422,7 @@ class Parser:
 
     def p_elif_list(self, p):
         '''elif_list : elif_list elif_clause INDENT block_body DENT
-                    | elif_clause INDENT block_body DENT
+                     | elif_clause INDENT block_body DENT
         '''
         print(">> elif_list")
         if len(p) == 5:
@@ -410,6 +452,123 @@ class Parser:
         '''
         print(">> else_clause")
         p[0] = ('else', p[5])
+
+    ###############################
+    #   PRODUCTIONS FOR LOOPS     #
+    ###############################
+
+    def p_in_clause(self, p):
+        '''in_clause : ID IN ID
+                     | ID IN RANGE LPAREN ret_value_operation RPAREN
+        '''
+        if len(p) == 4:
+            print(f">> in_clause {p[1]}, {p[3]}")
+            p[0] = ('in_clause', p[1], p[3])
+        else:
+            print(f">> in_range_clause {p[1]}, {p[5]}")
+            p[0] = ('in_range_clause', p[1], p[5])
+
+    def p_for_clause(self, p):
+        '''for_clause : FOR in_clause COLON NEWLINE
+        '''
+        print(">> for_clause")
+        p[0] = ('for', p[2])
+
+    def p_while_clause(self, p):
+        '''while_clause : WHILE ret_value_operation COLON NEWLINE
+        '''
+        print(">> while_clause")
+        p[0] = ('while', p[2])
+
+    # Loop-specific statement that includes break/continue
+    def p_loop_statement(self, p):
+        '''loop_statement : function
+                          | class
+                          | function_call
+                          | operation
+                          | loop_conditional
+                          | print
+                          | loop
+                          | BREAK
+                          | CONTINUE
+        '''
+        print(f">> loop_statement: {p[1]}")
+        p[0] = p[1]
+
+    # Loop statements can be repeated
+    def p_loop_statements(self, p):
+        '''loop_statements : loop_statement optional_newline
+                           | loop_statements loop_statement optional_newline
+        '''
+        if len(p) == 3:
+            p[0] = [p[1]]
+        else:
+            p[0] = p[1] + [p[2]]
+
+    # Loop body is similar to block_body but allows break/continue
+    def p_loop_body(self, p):
+        '''loop_body : loop_statements optional_return
+                     | return
+                     | PASS
+        '''
+        print(f">> loop_body")
+        if len(p) == 3:
+            p[0] = ('complete loop body', p[1], p[2])
+        else:
+            p[0] = ('simple loop body', p[1])
+
+    # Conditionals inside loops
+    def p_loop_conditional(self, p):
+        '''loop_conditional : loop_if_clause INDENT loop_body DENT loop_elif_list loop_else_clause
+                            | loop_if_clause INDENT loop_body DENT loop_elif_list
+                            | loop_if_clause INDENT loop_body DENT loop_else_clause
+                            | loop_if_clause INDENT loop_body DENT
+        '''
+        print(f">> loop_conditional")
+        if len(p) == 5:
+            p[0] = ('loop_conditional', ('if', p[1], p[3]))
+        elif len(p) == 6:
+            p[0] = ('loop_conditional', ('if', p[1], p[3]), p[5])
+        elif len(p) == 7:
+            p[0] = ('loop_conditional', ('if', p[1], p[3]), p[5], p[6])
+
+    def p_loop_elif_list(self, p):
+        '''loop_elif_list : loop_elif_list loop_elif_clause INDENT loop_body DENT
+                          | loop_elif_clause INDENT loop_body DENT
+        '''
+        print(">> loop_elif_list")
+        if len(p) == 5:
+            p[0] = ('elif_list', [('elif', p[1], p[3])])
+        else:
+            if p[1][0] == 'elif_list':
+                p[0] = ('elif_list', p[1][1] + [('elif', p[2], p[4])])
+            else:
+                p[0] = ('elif_list', [p[1], ('elif', p[2], p[4])])
+
+    def p_loop_if_clause(self, p):
+        '''loop_if_clause : IF ret_value_operation COLON NEWLINE
+        '''
+        print(">> loop_if_clause")
+        p[0] = p[2]
+
+    def p_loop_elif_clause(self, p):
+        '''loop_elif_clause : ELIF ret_value_operation COLON NEWLINE
+        '''
+        print(">> loop_elif_clause")
+        p[0] = p[2]
+
+    def p_loop_else_clause(self, p):
+        '''loop_else_clause : ELSE COLON NEWLINE INDENT loop_body DENT
+        '''
+        print(">> loop_else_clause")
+        p[0] = ('else', p[5])
+
+    def p_loop(self, p):
+        '''loop : for_clause INDENT loop_body DENT
+                | while_clause INDENT loop_body DENT
+        '''
+        print(f">> loop {p[1]}, {p[3]}")
+        p[0] = ("loop", p[1], p[3])
 
     ###############################
     #   PRODUCTIONS FOR CLASSES   #
