@@ -12,6 +12,7 @@ class Parser:
         ('left', 'PLUS', 'MINUS'),
         ('left', 'MUL', 'DIV', 'INT_DIV', 'MOD'),
         ('right', 'POW'),
+        ('left', 'IN')
     )
 
     def __init__(self):
@@ -25,7 +26,7 @@ class Parser:
         '''program : optional_newline statement_list
         '''
         print(">> program")
-        p[0] = p[1]
+        p[0] = p[2]
 
     def p_statement_list(self, p):
         '''statement_list : statement_list sentence optional_newline
@@ -104,15 +105,28 @@ class Parser:
         '''string : MULTISTRING
                   | STRING
                   | number_to_string
+                  | string_part
         '''
         print(">> string")
         p[0] = p[1]
 
+    def p_string_part(self, p):
+        '''string_part : string_concat LBRACKET INTEGER COLON INTEGER RBRACKET
+                       | string_concat LBRACKET INTEGER RBRACKET
+        '''
+        
+        if len(p) == 7:
+            p[0] = p[1][p[3]:p[5]]
+        else:
+            p[0] = p[1][p[3]]
+
+        print(f">> string_part {p[0]}")
+
     def p_list(self, p):
         '''list : ret_value_operation
+                | string
                 | list COMMA string
-                | list COMMA number
-                | list COMMA data_type
+                | list COMMA ret_value_operation
         '''
         if len(p) == 2:
             print(f">> list {p[1]}")
@@ -141,6 +155,82 @@ class Parser:
         '''
         print(f">> tuple {p[2]}")
         p[0] = p[2]
+
+    def p_dict_trash(self,p):
+        '''dict_trash : NEWLINE
+                      | INDENT
+                      | DENT
+                      | dict_trash dict_trash
+        '''
+        print(">> dict trash")
+        p[0] = None
+    
+    def p_optional_dict_trash(self, p):
+        '''optional_dict_trash : dict_trash
+                               | empty
+        '''
+        print(">> optional_dict_trash")
+        p[0] = None
+
+    def p_dict(self, p):
+        '''dict : LBRACE optional_dict_trash dict_items_opt optional_dict_trash RBRACE
+        '''
+        print(">> dict")
+        p[0] = p[3] if p[3] is not None else {}
+
+    def p_dict_items_opt(self, p):
+        '''dict_items_opt : dict_items
+                          | empty'''
+        print(">> dict_items_opt")
+        p[0] = p[1]
+
+    def p_dict_items(self, p):
+        '''dict_items : dict_item
+                      | dict_items COMMA optional_dict_trash dict_item
+        '''
+        print(">> dict_items")
+        if len(p) == 2:
+            p[0] = {p[1][0]: p[1][1]}
+        else:
+            p[0] = p[1]
+            p[0][p[4][0]] = p[4][1]
+
+    def p_dict_item(self, p):
+        '''dict_item : key COLON ret_value_operation
+                     | key COLON string
+                     | key COLON array
+                     | key COLON dict
+                     | key COLON tuple
+        '''
+        print(f">> dict item {p[3]}")
+        p[0] = (p[1], p[3])
+
+    def p_key(self, p):
+        '''key : string_concat
+               | ret_value_operation
+        '''
+        print(f">> key {p[1]}")
+        p[0] = p[1]
+
+    def p_next(self, p):
+        '''next_clause : NEXT LPAREN ref_data_type RPAREN
+        '''
+        print(f">> next_clause {p[3]}")
+        p[0] = ('NEXT', p[3])
+
+    def p_access_id(self, p):
+        '''access_id : ID LBRACKET INTEGER RBRACKET
+                     | ID LBRACKET INTEGER COLON INTEGER RBRACKET
+                     | ID LBRACKET ref_data_type RBRACKET
+                     | ID LBRACKET string_concat RBRACKET
+
+        '''
+        if len(p) == 7:
+            print(f">> access_id {p[1]} {p[3]} {p[5]}")
+            p[0] = ("access_id", p[1], p[3], p[5])
+        else:
+            print(f">> access_id {p[1]} {p[3]}")
+            p[0] = ("access_id", p[1], p[3])
 
     def p_arithmetic_symbol(self, p):
         '''arithmetic_symbol : PLUS 
@@ -184,7 +274,6 @@ class Parser:
     #   PRODUCTIONS FOR SENTENCES  #
     ################################
 
-    # TODO: Add for, while, if
     # for a sentence, includes basically everything that can be done
     def p_sentence(self, p):
         '''sentence : function
@@ -224,9 +313,24 @@ class Parser:
         '''operation : assignment_operation 
                      | simple_assignment_operation 
                      | array_assignment
+                     | iter_assignment
+                     | dict_assignment
         '''
         print(">> operation")
         p[0] = p[1]
+
+    def p_assign_iter(self, p):
+        '''iter_assignment : ref_data_type ASSIGN ITER LPAREN ref_data_type RPAREN
+                           | ref_data_type ASSIGN ITER LPAREN expression RPAREN
+        '''
+        print(">> iter_assignment")
+        p[0] = (p[1], p[5])
+
+    def p_assign_dict(self, p):
+        '''dict_assignment : ref_data_type ASSIGN dict
+        '''
+        print(">> dict_assignment")
+        p[0] = (p[1], p[3])
 
     def p_assign_array(self, p):
         '''array_assignment : ref_data_type ASSIGN array
@@ -253,6 +357,11 @@ class Parser:
     def p_expression(self, p):
         '''expression : ret_value_operation
                       | string_concat
+                      | next_clause
+                      | array
+                      | tuple
+                      | set
+                      | dict
         '''
         print(f">> expression: {p[1]}")
         p[0] = p[1]
@@ -270,6 +379,8 @@ class Parser:
                                | ref_data_type
                                | data_type
                                | function_call
+                               | check_in_collection
+                               | access_id
         '''
         print(">> ret_value_operation ")
         if len(p) == 2:
@@ -290,6 +401,10 @@ class Parser:
                 else:
                     p[0] = ("other_operation", p[1], operator, p[3])
 
+    def p_check_in_collection(self, p):
+        'check_in_collection : ret_value_operation IN ref_data_type'
+        p[0] = ('in', p[1], p[3])
+
     ###################################################
     #   PRODUCTIONS FOR STRING OPERATIONS AND PRINTS  #
     ###################################################
@@ -303,13 +418,16 @@ class Parser:
     # string concatenation
     def p_string_concat(self, p):
         '''string_concat : string_concat PLUS string
+                         | LPAREN string_concat PLUS string RPAREN
                          | string
         '''
         print(">> string_concat")
         if len(p) == 2:
             p[0] = p[1]
+        elif len(p) == 6:
+            p[0] = p[2] + p[4]
         else:
-            p[0] = ("concat", p[1], p[3])
+            p[0] = p[1] + p[3]
 
     ##############################################################
     #   PRODUCTIONS FOR FUNCTIONS, ARGUMENTS AND FUNCTION CALLS  #
@@ -320,9 +438,7 @@ class Parser:
     def p_argument(self, p):
         '''argument : expression
                     | ID COLON expression
-                    | ID COLON array
-                    | ID COLON tuple
-                    | ID COLON set
+                    | ID ASSIGN expression
         '''
         print(">> argument")
         if len(p) == 2:
@@ -462,7 +578,8 @@ class Parser:
     ###############################
 
     def p_in_clause(self, p):
-        '''in_clause : ID IN ID
+        '''in_clause : ID IN ref_data_type
+                     | ID IN expression
                      | ID IN RANGE LPAREN ret_value_operation RPAREN
         '''
         if len(p) == 4:
