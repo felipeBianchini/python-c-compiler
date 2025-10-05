@@ -22,7 +22,7 @@ class Parser:
     #########################
 
     def p_program(self, p):
-        '''program : statement_list
+        '''program : optional_newline statement_list
         '''
         print(">> program")
         p[0] = p[1]
@@ -253,7 +253,6 @@ class Parser:
     def p_expression(self, p):
         '''expression : ret_value_operation
                       | string_concat
-                      | function_call
         '''
         print(f">> expression: {p[1]}")
         p[0] = p[1]
@@ -270,6 +269,7 @@ class Parser:
                                | number
                                | ref_data_type
                                | data_type
+                               | function_call
         '''
         print(">> ret_value_operation ")
         if len(p) == 2:
@@ -320,6 +320,9 @@ class Parser:
     def p_argument(self, p):
         '''argument : expression
                     | ID COLON expression
+                    | ID COLON array
+                    | ID COLON tuple
+                    | ID COLON set
         '''
         print(">> argument")
         if len(p) == 2:
@@ -372,6 +375,7 @@ class Parser:
     # takes into account that not all functions have a body and not all functions have returns
     def p_function_body(self, p):
         '''function_body : sentences optional_return NEWLINE
+                         | sentences
                          | return NEWLINE
                          | PASS NEWLINE
         '''
@@ -389,9 +393,9 @@ class Parser:
         p[0] = ("function", p[2], p[4], p[9])
 
     def p_block_body(self, p):
-        '''block_body : sentences optional_return
-                      | return
-                      | PASS
+        '''block_body : sentences optional_return optional_newline
+                      | return optional_newline
+                      | PASS optional_newline
         '''
         print(">> block_body")
         if len(p) == 3:
