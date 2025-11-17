@@ -1,13 +1,11 @@
 import ply.lex as lex
 from src.utils import Error
-from src.symbol_table import SymbolTable
 
 class Lexer:
     def __init__(self, errors: list[Error], debug=False):
         self.lex = None
         self.data = None
         self.debug = debug
-        self.symbol_table = SymbolTable()
         self.reserved_map = {}
         self.errors = errors
         

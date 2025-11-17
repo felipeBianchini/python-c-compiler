@@ -2,7 +2,7 @@
 
 # Students: Felipe Bianchini, C21178. André Salas, C27058
 
-The current version of the project consists of a lexer that takes in a simplified form of Python called Fangless Python and outputs a series of tokens and errors.
+The current version of the project consists of a lexer and a parser that takes in a simplified form of Python called Fangless Python and outputs a series of tokens and errors, which are sent to the parser to check for syntax errors.
 
 ## User Guide
 
