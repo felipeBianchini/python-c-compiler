@@ -1,5 +1,6 @@
 import ply.yacc as yacc
 from src.lexer import Lexer
+from src.ast_nodes import *
 
 class Parser:
     tokens = Lexer.tokens
@@ -26,7 +27,7 @@ class Parser:
         '''program : optional_newline statement_list
         '''
         print(">> program")
-        p[0] = p[2]
+        p[0] = Program(p[2])
 
     def p_statement_list(self, p):
         '''statement_list : statement_list sentence optional_newline
@@ -36,7 +37,7 @@ class Parser:
         if len(p) == 3:
             p[0] = [p[1]]
         else:
-            p[0] = [p[1]] + [p[2]]
+            p[0] = p[1] + [p[2]]
 
     #########################
     #   OTHER PRODUCTIONS   #
@@ -85,13 +86,6 @@ class Parser:
         ''' 
         print(">> ref_data_type")
         p[0] = p[1]
-
-    # for the use of objects
-    # object.data
-    def p_objects_use(self, p):
-        'objects_use : ID DOT ID'
-        print(">> objects_use")
-        p[0] = ("class atribute use", p[1], p[3])
 
     # numbers
     def p_number(self, p):
@@ -386,24 +380,12 @@ class Parser:
         if len(p) == 2:
             p[0] = p[1]
         elif len(p) == 3:
-            p[0] = ("unary_operation", "NOT", p[2])
+            p[0] = UnaryOp("NOT", p[2])
         elif len(p) == 4:
             if p[1] == '(':
                 p[0] = p[2]
             else:
-                operator = p[2]
-                if operator in ('+', '-', '*', '/', '//', '%', '**'):
-                    p[0] = ("arithmetic_operation", p[1], operator, p[3])
-                elif operator in ('AND', 'OR'): 
-                    p[0] = ("logical_operation", p[1], operator, p[3])
-                elif operator in ('==', '!=', '<', '>', '<=', '>='):
-                    p[0] = ("relational_operation", p[1], operator, p[3])
-                else:
-                    p[0] = ("other_operation", p[1], operator, p[3])
-
-    def p_check_in_collection(self, p):
-        'check_in_collection : ret_value_operation IN ref_data_type'
-        p[0] = ('in', p[1], p[3])
+                p[0] = BinaryOp(p[1], p[2], p[3])   
 
     ###################################################
     #   PRODUCTIONS FOR STRING OPERATIONS AND PRINTS  #

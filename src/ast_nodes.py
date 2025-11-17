@@ -3,12 +3,32 @@ Definición de nodos del AST para el transpilador Python a C++
 """
 
 class ASTNode:
-    """Clase base para todos los nodos del AST"""
+    def __init__(self):
+        self.parent = None
+    
+    def children(self):
+        return []
+    
+    def set_parent(self, node):
+        if node is not None:
+            node.parent = self
+
     def accept(self, listener):
-        """Patrón Visitor/Listener"""
-        method_name = f'visit_{self.__class__.__name__}'
-        method = getattr(listener, method_name, listener.generic_visit)
-        return method(self)
+        # enter rule
+        method = getattr(listener, f"enter_{self.__class__.__name__}", None)
+        if method:
+            method(self)
+
+        # recorrer hijos
+        for child in self.children():
+            if child:
+                child.accept(listener)
+
+        # exit rule
+        method = getattr(listener, f"exit_{self.__class__.__name__}", None)
+        if method:
+            method(self)
+
 
 class Program(ASTNode):
     def __init__(self, statements):
@@ -36,7 +56,7 @@ class If(ASTNode):
     def __init__(self, condition, then_body, elif_parts, else_body, lineno=0):
         self.condition = condition
         self.then_body = then_body
-        self.elif_parts = elif_parts  # Lista de tuplas (condition, body)
+        self.elif_parts = elif_parts
         self.else_body = else_body
         self.lineno = lineno
 
@@ -80,7 +100,7 @@ class Identifier(ASTNode):
 class Literal(ASTNode):
     def __init__(self, value, type_name, lineno=0):
         self.value = value
-        self.type_name = type_name  # 'int', 'float', 'str', 'bool'
+        self.type_name = type_name
         self.lineno = lineno
 
 class ExpressionStatement(ASTNode):

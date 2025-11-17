@@ -1,27 +1,10 @@
-"""
-Interfaz base para el patrón Listener
-El patrón Listener (también conocido como Visitor) permite separar
-los algoritmos de las estructuras de datos sobre las que operan.
-"""
-
 class ASTListener:
-    """
-    Clase base para los listeners del AST.
-    Cada listener implementa métodos visit_* para cada tipo de nodo.
-    """
-    
     def generic_visit(self, node):
-        """
-        Método por defecto si no existe un visit específico.
-        Puedes sobrescribir este método para manejar nodos desconocidos.
-        """
         raise NotImplementedError(
             f"No se implementó el método visit_{node.__class__.__name__} "
             f"en {self.__class__.__name__}"
         )
-    
-    # ==================== Métodos visit para cada tipo de nodo ====================
-    
+        
     def visit_Program(self, node):
         """Visitar nodo Program (raíz del AST)"""
         pass
@@ -85,7 +68,6 @@ class ASTListener:
     def visit_Continue(self, node):
         """Visitar sentencia continue"""
         pass
-
 
 class CompositeListener(ASTListener):
     """
