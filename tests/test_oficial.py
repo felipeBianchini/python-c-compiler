@@ -61,6 +61,11 @@ def string_ex():
     print("profe"[2:4])
     print("profe"[2:4] + "profe"[0:2] + "profe"[-1])
 
+dictTest = {
+    "Numbers" : [1, 2, 3], 
+    "data" : 5, 
+    "str" : "aa"
+}
 
 print(random_operation(5, 6))
 print(fibonacci(4))

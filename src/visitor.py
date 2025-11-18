@@ -1,6 +1,11 @@
 symbol_table = {}
-function_table = {
-    "random_operation": (1, 2)
+function_table = {}
+VALID_OPERATION_NODES = {
+    "arithmetic_operation",
+    "logical_operation",
+    "relational_operation",
+    "unary_operation",
+    "function_call"
 }
 
 def visitor_function_call(call):
@@ -20,3 +25,157 @@ def visitor_function_call(call):
             print(f"Error Not enough parameters to call {call[1]}")
     else:
         print(f"Error: {call[1]} does not exist")
+
+def array_internal(array):
+    first = True
+    arrayResult = "{"
+    for i in array:
+        if not first:
+            arrayResult += ", "
+        else:
+            first = False
+        if isinstance(i, list):
+            arrayResult += f"std::vector<std::any>({array_internal(i)})"  # Fixed: += not =
+        elif isinstance(i, dict):
+            arrayResult += f"std::map<std::string, std::any>({map_internal(i)})"
+        elif isinstance(i, str):
+            arrayResult += f'"{i}"'  # Add quotes for strings
+        else:
+            arrayResult += f"{i}"
+    arrayResult += "}"
+    return arrayResult
+
+def map_internal(map_dict):
+    first = True
+    mapResult = "{"
+    for i in map_dict:
+        if not first:
+            mapResult += ", "
+        else:
+            first = False
+        
+        value = map_dict[i]  # Don't mutate the original dict
+        if isinstance(value, list):
+            valueResult = f"std::vector<std::any>({array_internal(value)})"
+        elif isinstance(value, dict):
+            valueResult = f"std::map<std::string, std::any>({map_internal(value)})"
+        elif isinstance(value, str):
+            valueResult = f'"{value}"'
+        else:
+            valueResult = str(value)
+        
+        mapResult += "{" + f'"{i}", {valueResult}' + "}"  # Fixed: use comma, not =
+    mapResult += "}"
+    return mapResult
+
+def visitor_array_assignment(call):
+    symbol_table = {}  # Added for completeness
+    result = ""
+    if call[1] not in symbol_table:
+        result = "std::vector<std::any> "
+    internal_array = array_internal(call[3])
+    result += f"{call[1]} = {internal_array};\n"
+    return result
+
+def visitor_dict_assignment(call):
+    result = ""
+    if not call[1] in symbol_table:
+        result += "std::map<std::string, std::any> "
+    internal_map = map_internal(call[3])
+    result += f"{call[1]} = {internal_map};\n"
+    return result
+
+def visitor_operations(node):
+    if not isinstance(node, tuple):
+        return str(node)
+    kind = node[0]
+    if kind == "arithmetic_operation":
+        return visitor_arithmetic_operation(node).strip()
+    if kind == "logical_operation":
+        return visitor_logical_operation(node).strip()
+    if kind == "relational_operation":
+        return visitor_relational_operation(node).strip()
+    if kind == "unary_operation":
+        return visitor_unary_operation(node).strip()
+    if kind == "function_call":
+        return visitor_function_call(node).strip()[:-1]
+    raise ValueError(f"Unknown node type: {kind}")
+
+def visitor_arithmetic_operation(call):
+    _, left, op, right = call
+    left = visitor_operations(left)
+    right = visitor_operations(right)
+    return f"{left} {op} {right}\n"
+
+def visitor_unary_operation(call):
+    _, op, value = call
+    if value is True:
+        value = "true"
+    elif value is False:
+        value = "false"
+    value = visitor_operations(value)
+    op = "!" if op == "NOT" else op
+    return f"{op}{value}\n"
+
+def visitor_logical_operation(call):
+    _, left, op, right = call
+    op = op.lower()
+    if op == "and":
+        op = "&&"
+    elif op == "or":
+        op = "||"
+    left = visitor_operations(left)
+    right = visitor_operations(right)
+    return f"{left} {op} {right}\n"
+
+def visitor_relational_operation(call):
+    _, left, op, right = call
+    left = visitor_operations(left)
+    right = visitor_operations(right)
+    return f"{left} {op} {right}\n"
+
+def visitor_assignment(call):
+    _, var_name, symbol, value = call
+
+    # Caso 1: operaciÃ³n, usar std::any
+    if isinstance(value, tuple) and value[0] in VALID_OPERATION_NODES:
+        value_code = visitor_operations(value)
+        return f"std::any {var_name} {symbol} {value_code};\n"
+
+    # Caso 2: literal, usar el tipo correcto en C++
+    # bool
+    if isinstance(value, bool):
+        cpp_value = "true" if value else "false"
+        return f"bool {var_name} {symbol} {cpp_value};\n"
+
+    # entero
+    if isinstance(value, int):
+        return f"int {var_name} {symbol} {value};\n"
+
+    # float
+    if isinstance(value, float):
+        return f"double {var_name} {symbol} {value};\n"
+
+    # string
+    if isinstance(value, str):
+        # escapar comillas si es necesario
+        escaped = value.replace('"', '\\"')
+        return f'std::string {var_name} {symbol} "{escaped}";\n'
+
+    return f'std::any {var_name} {symbol} "{value}";\n'
+
+
+def visitor_print(call):
+    _, exprs = call
+    result = ""
+    if isinstance(exprs, tuple) and exprs[0] in VALID_OPERATION_NODES:
+        value_code = visitor_operations(exprs)
+        return 'std::cout << ' + value_code + ' << std::endl;\n'
+    elif isinstance(exprs, str): 
+        expr_code = visitor_operations(exprs)
+        result += 'std::cout << "' + expr_code + '" << std::endl;\n'
+        return result
+    else: 
+        expr_code = visitor_operations(exprs)
+        result += 'std::cout << ' + expr_code + ' << std::endl;\n'
+        return result

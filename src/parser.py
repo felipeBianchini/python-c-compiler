@@ -151,6 +151,12 @@ class Parser:
         print(f">> set {p[2]}")
         p[0] = p[2]
 
+    def p_dict_set(self, p):
+        '''dict_set : dict
+                    | set
+        '''
+        p[0] = p[1]
+
     def p_tuple(self, p):
         '''tuple : LPAREN list RPAREN
         '''
@@ -302,7 +308,7 @@ class Parser:
         '''print : PRINT LPAREN expression RPAREN
         '''
         print(f">> print {p[3]}")
-        p[0] = [p[3]]
+        p[0] = p[3]
 
     #############################################
     #   PRODUCTIONS FOR SINGLE LINE OPERATIONS  #
@@ -336,23 +342,26 @@ class Parser:
     def p_assign_array(self, p):
         '''array_assignment : ref_data_type ASSIGN array
                             | ref_data_type ASSIGN tuple
-                            | ref_data_type ASSIGN set
+                            | ref_data_type ASSIGN dict_set
         '''
         print(">> array_assignment")
-        p[0] = ("array assignment", p[1], p[2], p[3])
+        if isinstance(p[3], dict):
+            p[0] = ("dictionary assignment", p[1], p[2], p[3])
+        else:    
+            p[0] = ("array assignment", p[1], p[2], p[3])
 
     def p_simple_assignment_operation(self, p):
         '''simple_assignment_operation : ref_data_type ASSIGN expression
         '''
         print(">> simple_assignment_operation")
-        p[0] = ("simple assignment operation", p[1], p[2], p[3])
+        p[0] = ("simple_assignment_operation", p[1], p[2], p[3])
 
     # other types of assignment operations
     # the other assignment symbols only work between a referentiable data and a number
     def p_assignment_operation(self, p):
         'assignment_operation : ID assignment_symbol number'
         print(">> assignment_operation")
-        p[0] = ("assignment operation", p[1], p[2], p[3])
+        p[0] = ("assignment_operation", p[1], p[2], p[3])
 
     # all types of operations and statements that return a value
     def p_expression(self, p):
@@ -361,8 +370,7 @@ class Parser:
                       | next_clause
                       | array
                       | tuple
-                      | set
-                      | dict
+                      | dict_set
         '''
         print(f">> expression: {p[1]}")
         p[0] = p[1]
@@ -395,7 +403,7 @@ class Parser:
                 operator = p[2]
                 if operator in ('+', '-', '*', '/', '//', '%', '**'):
                     p[0] = ("arithmetic_operation", p[1], operator, p[3])
-                elif operator in ('AND', 'OR'): 
+                elif operator in ('and', 'or'): 
                     p[0] = ("logical_operation", p[1], operator, p[3])
                 elif operator in ('==', '!=', '<', '>', '<=', '>='):
                     p[0] = ("relational_operation", p[1], operator, p[3])
