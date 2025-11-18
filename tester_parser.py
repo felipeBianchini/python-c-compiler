@@ -16,4 +16,19 @@ lexer.input(source_code)
 # Create Parser
 parser = Parser()
 result = parser.parser.parse(source_code, lexer=lexer)
-print(result)
+#print(result)
+
+def print_list(tree, num = 0):
+    for i in tree:
+        if isinstance(i, list):
+            print(f"Block Start {num + 1}\n")
+            print_list(i, num + 1)
+            print(f"Block_end{num+ 1}")
+        else:
+            print(i)
+            print()
+
+print("Full tree:")
+for i in result:
+    print(i)
+    print()
