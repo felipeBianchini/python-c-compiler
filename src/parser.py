@@ -108,7 +108,7 @@ class Parser:
                   | number_to_string
                   | string_part
         '''
-        print(">> string")
+        print(f">> string {p[1]}")
         p[0] = p[1]
 
     def p_string_part(self, p):
@@ -204,7 +204,7 @@ class Parser:
 
     def p_dict_item(self, p):
         '''dict_item : key COLON ret_value_operation
-                     | key COLON string
+                     | key COLON final_string
                      | key COLON array
                      | key COLON dict
                      | key COLON tuple
@@ -213,7 +213,7 @@ class Parser:
         p[0] = (p[1], p[3])
 
     def p_key(self, p):
-        '''key : string_concat
+        '''key : final_string
                | ret_value_operation
         '''
         print(f">> key {p[1]}")
@@ -229,7 +229,7 @@ class Parser:
         '''access_id : ID LBRACKET INTEGER RBRACKET
                      | ID LBRACKET INTEGER COLON INTEGER RBRACKET
                      | ID LBRACKET ref_data_type RBRACKET
-                     | ID LBRACKET string_concat RBRACKET
+                     | ID LBRACKET final_string RBRACKET
 
         '''
         if len(p) == 7:
@@ -308,7 +308,7 @@ class Parser:
         '''print : PRINT LPAREN expression RPAREN
         '''
         print(f">> print {p[3]}")
-        p[0] = p[3]
+        p[0] = ("print_call", p[3])
 
     #############################################
     #   PRODUCTIONS FOR SINGLE LINE OPERATIONS  #
@@ -366,7 +366,7 @@ class Parser:
     # all types of operations and statements that return a value
     def p_expression(self, p):
         '''expression : ret_value_operation
-                      | string_concat
+                      | final_string
                       | next_clause
                       | array
                       | tuple
@@ -430,13 +430,19 @@ class Parser:
                          | LPAREN string_concat PLUS string RPAREN
                          | string
         '''
-        print(">> string_concat")
         if len(p) == 2:
             p[0] = p[1]
         elif len(p) == 6:
             p[0] = p[2] + p[4]
         else:
             p[0] = p[1] + p[3]
+        print(f">> String concat: {p[0]}")
+
+    def p_final_string(self, p):
+        '''final_string : string_concat
+        '''
+        p[0] = f"\"{p[1]}\""
+        print(f">> final_string: {p[0]}")
 
     ##############################################################
     #   PRODUCTIONS FOR FUNCTIONS, ARGUMENTS AND FUNCTION CALLS  #

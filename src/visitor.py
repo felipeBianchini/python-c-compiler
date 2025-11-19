@@ -1,4 +1,4 @@
-symbol_table = {}
+symbol_table = {"a" : {"value" : 0}}
 function_table = {}
 VALID_OPERATION_NODES = {
     "arithmetic_operation",
@@ -7,6 +7,18 @@ VALID_OPERATION_NODES = {
     "unary_operation",
     "function_call"
 }
+
+def check_if_str(data):
+    return data[0] == "\"" and data[-1] == "\""
+
+def check_if_var_exists(var):
+    return var in symbol_table
+    # TODO: Make it so this table can check if a variable is available in local scope
+
+def get_symbol_value(symbol):
+    print(symbol)
+    symbol = str(symbol)
+    return symbol_table[symbol]["value"]
 
 def visitor_function_call(call):
     if call[1] in function_table:
@@ -39,7 +51,13 @@ def array_internal(array):
         elif isinstance(i, dict):
             arrayResult += f"std::map<std::string, std::any>({map_internal(i)})"
         elif isinstance(i, str):
-            arrayResult += f'"{i}"'  # Add quotes for strings
+            if check_if_str(i):
+                arrayResult += f'{i}'
+            else:
+                if check_if_var_exists(i):
+                    arrayResult += f"{i}"
+                else:
+                    raise Exception(f"Variable {i} does not exist: {array}")
         else:
             arrayResult += f"{i}"
     arrayResult += "}"
@@ -54,22 +72,36 @@ def map_internal(map_dict):
         else:
             first = False
         
-        value = map_dict[i]  # Don't mutate the original dict
+        value = map_dict[i]
         if isinstance(value, list):
             valueResult = f"std::vector<std::any>({array_internal(value)})"
         elif isinstance(value, dict):
             valueResult = f"std::map<std::string, std::any>({map_internal(value)})"
         elif isinstance(value, str):
-            valueResult = f'"{value}"'
+            if check_if_str(value):
+                valueResult = f'{value}'
+            else:
+                if check_if_var_exists(value):
+                    valueResult = value
+                else:
+                    raise ValueError(f"Variable {i} does not exist: {map_dict}")
         else:
             valueResult = str(value)
-        
-        mapResult += "{" + f'"{i}", {valueResult}' + "}"  # Fixed: use comma, not =
+        resultI = ""
+        if not isinstance(i, str):
+            resultI = str(i)
+        elif not check_if_str(i):
+            if check_if_var_exists(i):
+                resultI = str(get_symbol_value(i))
+            else:
+                raise ValueError(f"Variable does not exist: {i}: {map_dict}")
+        if not (resultI[0] == "\"" and resultI[-1] == "\""):
+            resultI = f"\"{resultI}\""
+        mapResult += "{" + f'{resultI}, {valueResult}' + "}"
     mapResult += "}"
     return mapResult
 
 def visitor_array_assignment(call):
-    symbol_table = {}  # Added for completeness
     result = ""
     if call[1] not in symbol_table:
         result = "std::vector<std::any> "
