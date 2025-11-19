@@ -464,15 +464,19 @@ class Parser:
     # recursive rule for arguments
     def p_arguments(self, p):
         '''arguments : argument
-                     | arguments COMMA argument
-                     | empty
+                    | arguments COMMA argument
+                    | empty
         '''
         print(">> arguments")
         if len(p) == 2:
-            result = [] if p[1] is None else [p[1]]
-            p[0] = result
+            if p[1] is None:
+                p[0] = ("arguments", [])
+            else:
+                p[0] = ("arguments", [p[1]])
         else:
-            p[0] = p[1] + [p[3]]
+            prev_args = p[1][1]
+            new_list = prev_args + [p[3]]
+            p[0] = ("arguments", new_list)
 
     # for function calls
     # works for simple, normal function calls and function calls inside classes

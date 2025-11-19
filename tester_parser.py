@@ -4,7 +4,7 @@ from src.parser import Parser
 from src.utils import Error
 
 # Read file
-with open("tests/test_oficial.py", "r", encoding='utf-8') as f:
+with open("tests/a.py", "r", encoding='utf-8') as f:
     source_code = f.read()
 
 # Create Lexer
