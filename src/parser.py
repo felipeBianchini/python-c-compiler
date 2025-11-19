@@ -125,8 +125,8 @@ class Parser:
 
     def p_list(self, p):
         '''list : ret_value_operation
-                | string
-                | list COMMA string
+                | final_string
+                | list COMMA final_string
                 | list COMMA ret_value_operation
         '''
         if len(p) == 2:
