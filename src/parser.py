@@ -128,6 +128,9 @@ class Parser:
                 | final_string
                 | list COMMA final_string
                 | list COMMA ret_value_operation
+                | list COMMA tuple
+                | list COMMA dict
+                | list COMMA array
         '''
         if len(p) == 2:
             print(f">> list {p[1]}")
