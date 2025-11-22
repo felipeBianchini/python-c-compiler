@@ -1,5 +1,6 @@
 import ply.yacc as yacc
 from src.lexer import Lexer
+from src.symbol_table import SymbolTable
 
 class Parser:
     tokens = Lexer.tokens
@@ -15,8 +16,47 @@ class Parser:
         ('left', 'IN')
     )
 
+    def _infer_type(self, value_node):
+        """Inferir tipo usando symbol table helpers (acepta nodos/tuplas ó literales)."""
+        # si es un nodo tupla (operación, acceso, etc) usar infer_type_from_operation
+        if isinstance(value_node, tuple):
+            return self.symtab.infer_type_from_operation(value_node)
+        # literal strings 'None','True','False' o tipos python
+        return self.symtab.infer_type_from_value(value_node)
+
+    def _insert_symbol_from_assignment(self, target, value_node, line=None, category='variable'):
+        """
+        Insertar o actualizar símbolo al hacer una asignación.
+        target puede ser:
+         - ID (str)
+         - ("class atribute use", class_name, attr_name)
+        """
+        if isinstance(target, tuple) and target[0] == "class atribute use":
+            # tratamiento simple: guarda atributo en scope de la clase (si existe)
+            class_name = target[1]
+            attr_name = target[2]
+            # intenta encontrar símbolo de clase
+            class_symbol = self.symtab.lookup(class_name)
+            scoped_name = f"{class_name}.{attr_name}"
+            typ = self._infer_type(value_node)
+            # guardamos como variable en el scope actual con nombre "class.attr"
+            self.symtab.insert(scoped_name, typ, line=line, value=None, category='variable')
+            return
+
+        # si target es simple ID
+        if isinstance(target, str):
+            typ = self._infer_type(value_node)
+            existing = self.symtab.lookup(target)
+            if existing:
+                # actualizar tipo si compatible o sobrescribir
+                self.symtab.update_type(target, typ)
+            else:
+                self.symtab.insert(target, typ, line=line, value=None, category=category)
+
     def __init__(self):
         self.parser = yacc.yacc(module=self, debug=True, debugfile='parser.out')
+        self.symtab = SymbolTable()
+        self._pending_scope_name = None
         
     #########################
     #   INITIAL PRODUCTION  #
@@ -342,6 +382,7 @@ class Parser:
         '''
         print(">> dict_assignment")
         p[0] = (p[1], p[3])
+        self._insert_symbol_from_assignment(p[1], p[3], category='variable')
 
     def p_assign_array(self, p):
         '''array_assignment : ref_data_type ASSIGN array
@@ -350,22 +391,38 @@ class Parser:
         '''
         print(">> array_assignment")
         if isinstance(p[3], dict):
+            self._insert_symbol_from_assignment(p[1], p[3], category='variable')
             p[0] = ("dictionary assignment", p[1], p[2], p[3])
-        else:    
+        else:
+            self._insert_symbol_from_assignment(p[1], p[3], category='variable')    
             p[0] = ("array assignment", p[1], p[2], p[3])
+
 
     def p_simple_assignment_operation(self, p):
         '''simple_assignment_operation : ref_data_type ASSIGN expression
         '''
         print(">> simple_assignment_operation")
+        self._insert_symbol_from_assignment(p[1],  p[3], category='variable')
         p[0] = ("simple_assignment_operation", p[1], p[2], p[3])
 
     # other types of assignment operations
     # the other assignment symbols only work between a referentiable data and a number
     def p_assignment_operation(self, p):
         'assignment_operation : ID assignment_symbol number'
-        print(">> assignment_operation")
-        p[0] = ("assignment_operation", p[1], p[2], p[3])
+        name = p[1]
+        number = p[3]
+        typ = self._infer_type(number)
+        existing = self.symtab.lookup(name)
+        if existing:
+            # intentar compatibilidad, si no compatible, reemplazar
+            comp = self.symtab.check_type_compatibility(existing.type_data, typ)
+            if comp:
+                self.symtab.update_type(name, comp)
+            else:
+                self.symtab.update_type(name, typ)
+        else:
+            self.symtab.insert(name, typ, category='variable')
+        p[0] = ("assignment_operation", name, p[2], number)
 
     # all types of operations and statements that return a value
     def p_expression(self, p):
@@ -384,6 +441,18 @@ class Parser:
         '''append : ID DOT APPEND LPAREN expression RPAREN
         '''
         print(f">> Append {p[1]}.append({p[5]})")
+        target = p[1]
+        value = p[5]
+        existing = self.symtab.lookup(target)
+        if existing is None:
+            # asumimos lista
+            typ = self._infer_type(value)
+            # guardamos como list (sin detalle de element type)
+            self.symtab.insert(target, 'list', category='variable')
+        else:
+            if existing.type_data != 'list':
+                # posible inconsistencia: forzamos a list
+                self.symtab.update_type(target, 'list')
         p[0]= ("append", p[1], p[5])
 
     # this works for all types of operations that return a value
@@ -531,12 +600,51 @@ class Parser:
         else:
             p[0] = ('incomplete function body', p[1])
 
-    # for functions
+    def p_enter_block(self, p):
+        # indents tell us when does a block start
+        # we use this to create a new scope in the symbol table
+        'enter_block : INDENT'
+        # if there is an pending scope name, use it
+        # if not, create a new one
+        if self._pending_scope_name:
+            self.symtab.enter_scope(self._pending_scope_name)
+            print(f">> enter_block: created scope {self._pending_scope_name}")
+            self._pending_scope_name = None
+        else:
+            scope_name = self.symtab.enter_scope()
+            print(f">> enter_block: created scope {scope_name}")
+        p[0] = None
+
+    def p_exit_block(self, p):
+        # dents tell us when does a block end
+        'exit_block : DENT'
+        # it allows us to exit the current scope in the symbol table
+        self.symtab.exit_scope()
+        print(f">> exit_block: back to scope {self.symtab.current_scope}")
+        p[0] = None
+
+    def p_def_header(self, p):
+        '''def_header : DEF ID LPAREN arguments RPAREN COLON NEWLINE'''
+        # store function name so that symbol table creates a scope with that name
+        func_name = p[2]
+        self._pending_scope_name = f"function::{func_name}"
+        self.symtab.insert(func_name, 'function', category='function')
+        print(f">> def_header (pending scope for function {func_name})")
+        p[0] = (func_name, p[4])
+
     def p_function(self, p):
-        '''function : DEF ID LPAREN arguments RPAREN COLON NEWLINE INDENT function_body DENT
-        '''
+        '''function : def_header enter_block function_body exit_block'''
         print(">> function")
-        p[0] = ("function", p[2], p[4], p[9])
+        func_name, args = p[1]
+        args_list = args[1]
+        for arg in args_list:
+            if arg[0] == "argument":
+                name = arg[1] if isinstance(arg[1], str) else None
+                default = arg[2]
+                if name:
+                    typ = self._infer_type(default) if default is not None else 'unknown'
+                    self.symtab.insert(name, typ, category='parameter')
+        p[0] = ("function", func_name, args, p[3])
 
     def p_block_body(self, p):
         '''block_body : sentences optional_return optional_newline

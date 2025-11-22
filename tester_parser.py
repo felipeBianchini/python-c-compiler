@@ -2,6 +2,7 @@ from re import DEBUG
 from src.lexer import Lexer
 from src.parser import Parser
 from src.utils import Error
+from src.symbol_table import SymbolTable
 
 # Read file
 with open("tests/test_oficial.py", "r", encoding='utf-8') as f:
@@ -32,3 +33,7 @@ print("Full tree:")
 for i in result:
     print(i)
     print()
+
+symbol_table1 = parser.symtab
+print(symbol_table1.print_summary())
+print(symbol_table1.print_table())

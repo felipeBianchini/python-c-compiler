@@ -15,7 +15,6 @@ keywords = ["break", "continue"]
 def visit(node):
     if node is None:
         return ""
-
     if isinstance(node, tuple):
         tag = node[0].replace(" ", "_")
         func = globals().get(f"visitor_{tag}", None)
