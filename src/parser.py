@@ -415,7 +415,7 @@ class Parser:
         existing = self.symtab.lookup(name)
         if existing:
             # intentar compatibilidad, si no compatible, reemplazar
-            comp = self.symtab.check_type_compatibility(existing.type_data, typ)
+            comp = self.symtab.check_type_compatibility(existing.datatype, typ)
             if comp:
                 self.symtab.update_type(name, comp)
             else:
@@ -450,7 +450,7 @@ class Parser:
             # guardamos como list (sin detalle de element type)
             self.symtab.insert(target, 'list', category='variable')
         else:
-            if existing.type_data != 'list':
+            if existing.datatype != 'list':
                 # posible inconsistencia: forzamos a list
                 self.symtab.update_type(target, 'list')
         p[0]= ("append", p[1], p[5])
