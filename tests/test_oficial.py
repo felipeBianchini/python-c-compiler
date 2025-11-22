@@ -67,6 +67,8 @@ dictTest = {
     "str" : "aa"
 }
 
+
+
 print(random_operation(5, 6))
 print(fibonacci(4))
 print(fibonacci_d(4))
@@ -77,3 +79,6 @@ print(tuple_ex())
 print(set_ex())
 print(slices_ex())
 string_ex()
+
+a = [1, 2]
+a.append(3)

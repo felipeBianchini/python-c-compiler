@@ -293,6 +293,7 @@ class Parser:
                     | conditional
                     | print
                     | loop
+                    | append
         '''
         print(">> sentence")
         p[0] = p[1]
@@ -374,9 +375,16 @@ class Parser:
                       | array
                       | tuple
                       | dict_set
+                      | append
         '''
         print(f">> expression: {p[1]}")
         p[0] = p[1]
+
+    def p_append(self, p):
+        '''append : ID DOT APPEND LPAREN expression RPAREN
+        '''
+        print(f">> Append {p[1]}.append({p[5]})")
+        p[0]= ("append", p[1], p[5])
 
     # this works for all types of operations that return a value
     # includes arithmethic, logical and relational operations

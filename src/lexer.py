@@ -21,7 +21,7 @@ class Lexer:
     reserved = (
         'IF', 'ELSE', 'ELIF', 'WHILE', 'FOR', 'BREAK', 'CONTINUE', 'PASS', 'DEF', 'RETURN',
         'CLASS', 'AND', 'OR', 'NOT', 'IN', 'RANGE', 'ITER', 'NEXT', 'PRINT',
-        'STR'
+        'STR', 'APPEND'
     )
 
     tokens = reserved + (

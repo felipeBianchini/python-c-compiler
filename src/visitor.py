@@ -62,9 +62,10 @@ def get_symbol_value(symbol):
 def get_symbol_type(symbol):
     symbol = str(symbol)
     i = current_level
-    while(i > 0):
+
+    while(i >= 0):
         if symbol in symbol_table[i]:
-            return symbol_table[symbol]["type"]
+            return symbol_table[i][symbol]["type"]
         else:
             i -= 1
     raise ValueError(f"Symbol {symbol} does not exist")
@@ -191,6 +192,28 @@ def visitor_dict_assignment(call):
     result += f"{call[1]} = {internal_map};\n"
     symbol_table[current_level][call[1]]["type"] = "dict"
     return result
+
+def visitor_append(node):
+    __,var, val = node
+    result = ""
+    if check_if_var_exists(var):
+        val_result = ""
+        if get_symbol_type(var) == "list":
+            var_result = f"{var}.push_back("
+        else:
+            raise TypeError(f"Var {var} is not a list, so it cannot be appended")
+        
+        if isinstance(val, str):
+            if not check_if_str(val):
+                val = get_symbol_value(val)
+            else:
+                val = f"\"{val}\""
+
+        var_result += f"{val});"
+        return var_result
+    else:
+        raise ValueError(f"Var {var} does not exist, cannot append")        
+
 
 def visitor_operations(node):
     if not isinstance(node, tuple):
@@ -477,4 +500,8 @@ def visitor_continue(node):
     return "continue;"
     
 query = ('function', 'sexo', ('arguments', [('argument', 'a', None)]), ('incomplete function body', [('loop', ('while', ('relational_operation', 'a', '<', 5)), ('complete loop body', [('print_call', 'a'), ('assignment_operation', 'a', '+=', 1)], None))]))
+print(visit(query))
+visit(('array assignment', 'a', '=', [1, 2]))
+print(symbol_table)
+query = ('append', 'a', 3)
 print(visit(query))
