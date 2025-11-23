@@ -16,6 +16,17 @@ class SymbolTable:
         self.current_scope = 'global'
         self.scope_counter = 0
 
+    def getSymbolType(self, name):
+        if not isinstance(name, str):
+            return type(name).__name__
+        elif name[0] == "\"" and name[-1] == "\"":
+            return "std::string"
+        for scope in reversed(self.scopes):
+            key = f"{scope}::{name}"
+            if key in self.symbols:
+                return self.symbols[key].datatype
+        return None
+    
     def enter_scope(self, scope_name=None):
         # enters and creates a new scope
         if scope_name is None:
