@@ -24,14 +24,12 @@ parseTree = parser.parser.parse(source_code, lexer=lexer)
 print(parseTree)
 
 #Create Visitor for code generation
-try:
-    symtab = SymbolTable()
-    visitor = Visitor(symbol_table=symtab, parse_tree=parseTree)
-    newCode = visitor.start()
-    output_path = input_path.replace("py", "cpp")
-    file = open(output_path, "w")
-    file.write(newCode)
-
-
-except Exception as e:
-    print(e)
+#try:
+symtab = SymbolTable()
+visitor = Visitor(symbol_table=symtab, parse_tree=parseTree)
+newCode = visitor.start()
+output_path = input_path.replace("py", "cpp")
+file = open(output_path, "w")
+file.write(newCode)
+#except Exception as e:
+ #   print(e)

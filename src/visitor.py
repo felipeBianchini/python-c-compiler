@@ -181,6 +181,10 @@ class Visitor:
                 types[resultI]["types"] = array_subtype
         mapResult += "}"
         return mapResult, types
+    
+    def visitor_access_id(self, node):
+        _, name, val = node
+        return f"{name}[{val}]"
 
     def visitor_array_assignment(self, call):
         result = ""
@@ -309,7 +313,6 @@ class Visitor:
         else:
             return f"{var_name} {symbol} {value_code};\n"
 
-
     def visitor_print_call(self, call):
         _, exprs = call
         result = ""
@@ -402,13 +405,12 @@ class Visitor:
 
 
     def write_elif(self, node):
+        print(node)
         cond = self.visit(node[1])
-
         self.symbol_table.enter_scope("elif")
         body = self.visit(node[2])
         body = self.indent(body, 1)
         self.symbol_table.exit_scope()
-
         return f"else if ({cond}) {{\n{body}\n}}\n"
 
 
@@ -482,8 +484,8 @@ class Visitor:
         self.symbol_table.exit_scope()
 
         return f"{loop_clause} {{\n{body_cpp}\n}}\n"
-
-    def visitor_incomplete_loop_body(self, node):
+    
+    def visitor_loop_conditional(self, node):
         _, body = node
         return self.visit(body)
 

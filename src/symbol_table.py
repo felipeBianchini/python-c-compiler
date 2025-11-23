@@ -107,8 +107,8 @@ class SymbolTable:
             # if both operands are int, result is int
             if left == 'int' and right == 'int':
                 return 'int'
-            # default to float for mixed or unknown numeric types
-            return 'float'
+            # default to int for mixed or unknown numeric types
+            return 'int'
         # all these operations result in boolean type
         if op_type in ('relational_operation', 'logical_operation', 'unary_operation'):
             return 'bool'

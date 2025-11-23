@@ -122,7 +122,8 @@ class Parser:
     # referentiable data types
     def p_ref_data_type(self, p):
         '''ref_data_type : ID
-                         | objects_use         
+                         | objects_use
+                         | access_id       
         ''' 
         print(">> ref_data_type")
         p[0] = p[1]
@@ -269,18 +270,16 @@ class Parser:
         p[0] = ('NEXT', p[3])
 
     def p_access_id(self, p):
-        '''access_id : ID LBRACKET INTEGER RBRACKET
+        '''access_id : ID LBRACKET ret_value_operation RBRACKET
                      | ID LBRACKET INTEGER COLON INTEGER RBRACKET
-                     | ID LBRACKET ref_data_type RBRACKET
                      | ID LBRACKET final_string RBRACKET
-
         '''
         if len(p) == 7:
-            print(f">> access_id {p[1]} {p[3]} {p[5]}")
-            p[0] = ("access_id", p[1], p[3], p[5])
+            print(f">> access id {p[1]} {p[3]} {p[5]}")
+            p[0] = ("access id", p[1], p[3], p[5])
         else:
-            print(f">> access_id {p[1]} {p[3]}")
-            p[0] = ("access_id", p[1], p[3])
+            print(f">> access id {p[1]} {p[3]}")
+            p[0] = ("access id", p[1], p[3])
 
     def p_arithmetic_symbol(self, p):
         '''arithmetic_symbol : PLUS 
@@ -469,7 +468,6 @@ class Parser:
                                | data_type
                                | function_call
                                | check_in_collection
-                               | access_id
         '''
         print(">> ret_value_operation ")
         if len(p) == 2:
@@ -785,11 +783,11 @@ class Parser:
         '''
         print(f">> loop_conditional")
         if len(p) == 5:
-            p[0] = ('loop_conditional', ('if', p[1], p[3]))
+            p[0] = ('loop_conditional', ('conditional', p[1], p[3]))
         elif len(p) == 6:
-            p[0] = ('loop_conditional', ('if', p[1], p[3]), p[5])
+            p[0] = ('loop_conditional', ('conditional', p[1], p[3]), p[5])
         elif len(p) == 7:
-            p[0] = ('loop_conditional', ('if', p[1], p[3]), p[5], p[6])
+            p[0] = ('loop_conditional', ('conditional', p[1], p[3]), p[5], p[6])
 
     def p_loop_elif_list(self, p):
         '''loop_elif_list : loop_elif_list loop_elif_clause INDENT loop_body DENT
