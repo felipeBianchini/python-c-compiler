@@ -6,12 +6,6 @@ def bubble_sort(numbers, n):
                 aux = numbers[j + 1]
                 numbers[j + 1] = numbers[j]
                 numbers[j] = aux
-            elif numbers[j] < numbers[j + 1]:
-                print("pene")
-            elif numbers[j] == numbers[j + 1]:
-                print("pitongus")
-            else:
-                print("picha")
     return numbers
 
 nums = [5, 1, 4, 2, 8]

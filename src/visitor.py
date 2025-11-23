@@ -447,6 +447,7 @@ class Visitor:
 
 
     def write_elif(self, node):
+        print(node)
         cond = self.visit(node[1])
         self.symbol_table.enter_scope("elif")
         body = self.visit(node[2])
@@ -468,10 +469,10 @@ class Visitor:
         if len(node) > 2:
             result += self.write_if(node[1])
         if len(node) > 3:
-            elif_else = node[2: -1]
+            elif_else = node[2:]
             for i in elif_else:
                 if i[0] == "elif_list":
-                    for j in i[1: -1]:
+                    for j in i[1]:
                         result += self.write_elif(j)  
                 if i[0] == "else":
                     result +=self. write_else(node[3])
