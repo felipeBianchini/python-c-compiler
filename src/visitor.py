@@ -14,13 +14,28 @@ class Visitor:
             "function_call"
         }
         self.keywords = ["break", "continue"]
+        self.functions_started = False
         pass
 
     def start(self):
-        includes = '''#include <any>\n#include <cmath>\n# include <iostream>\n\n'''
-        code = self.visit(self.parse_tree)
-        fmain = "\n\nint main() {\n    return 0;\n}\n"
-        return includes + code + fmain
+        includes = '''#include<any>\n#include<cmath>\n#include<iostream>\n#include<vector>\n#include<map>\n'''
+        code = ""
+        global_vars= ""
+        main = ""
+        for i in self.parse_tree:
+            if i[0] == "function" :
+                code += self.visit(i)
+                self.functions_started = True
+            elif (not self.functions_started) and i[0] == "simple_assignment_operation":
+                global_vars += self.visit(i)
+            else:
+                main += self.visit(i)
+        
+        main += "return 0;\n"
+        main = self.indent(main, 1)  
+        fmain = "\n\nint main() {\n"
+        fmain += f"{main}" + "}"
+        return includes + global_vars + code + fmain
 
     def visit(self, node):
         if node is None:
@@ -255,8 +270,19 @@ class Visitor:
 
     def visitor_relational_operation(self, call):
         _, left, op, right = call
-        left = self.visitor_operations(left)
-        right = self.visitor_operations(right)
+        if self.symbol_table.getSymbolType(left) == "any" or self.symbol_table.getSymbolType(right) == "any":
+            if self.symbol_table.getSymbolType(left) == "any":
+                n_type = self.symbol_table.getSymbolType(right)
+                left = f"std::any_cast<{n_type}>({left})"
+                right = self.visitor_operations(right)
+            else:
+                n_type = self.symbol_table.getSymbolType(left)
+                right = f"std::any_cast<{n_type}>({right})"
+                left = self.visitor_operations(left)
+        else:
+            left = self.visitor_operations(left)
+            right = self.visitor_operations(right)
+        
         return f"{left} {op} {right}"
 
     def visitor_simple_assignment_operation(self, call):
@@ -267,8 +293,12 @@ class Visitor:
         else:
             value_code = str(value)
             datatype = self.symbol_table.infer_type_from_value(value)
-        self.symbol_table.insert(var_name, datatype, value=value)
-        return f"{datatype} {var_name} {symbol} {value_code};\n"
+        
+        if self.symbol_table.lookup(var_name) == None:
+            self.symbol_table.insert(var_name, datatype, value=value)
+            return f"{datatype} {var_name} {symbol} {value_code};\n"
+        else:
+            return f"{var_name} {symbol} {value_code};\n"
 
 
     def visitor_print_call(self, call):
@@ -348,7 +378,7 @@ class Visitor:
         # Cerrar scope
         self.symbol_table.exit_scope()
 
-        return f"auto {name}({cpp_args}) {{\n{cpp_body}\n}}"
+        return f"auto {name}({cpp_args}) {{\n{cpp_body}\n}}\n"
 
 
     def write_if(self, node):
@@ -414,14 +444,17 @@ class Visitor:
         self.symbol_table.insert(var, "int", value=None)
         range_cpp = self.visit(range_val)
         inferred_type = self.symbol_table.infer_type_from_operation(range_val)
-        if inferred_type == "float":
+        if self.symbol_table.lookup(range_val) != None:
+            if self.symbol_table.getSymbolType(range_val) == "any":
+                range_cpp = f"std::any_cast<int>({range_val})"
+        elif inferred_type == "float":
             range_cpp = f"(int){range_cpp}"
         return f"(int {var} = 0; {var} < {range_cpp}; {var}++)"
 
     def visitor_for(self, node):
         __, clause = node
         clause_cpp = self.visit(clause)
-        result = f"for {clause_cpp}" + " \n"
+        result = f"for {clause_cpp}"
         return result
 
     def visitor_while(self, node):
