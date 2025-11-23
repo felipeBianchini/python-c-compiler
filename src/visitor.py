@@ -241,8 +241,17 @@ class Visitor:
 
     def visitor_arithmetic_operation(self, call):
         _, left, op, right = call
-        left = self.visitor_operations(left)
-        right = self.visitor_operations(right)
+        if self.symbol_table.getSymbolType(left) == "any":
+            n_type = self.symbol_table.getSymbolType(right)
+            left = f"std::any_cast<{n_type}>({left})"
+            right = self.visitor_operations(right)
+        elif self.symbol_table.getSymbolType(right) == "any":
+            n_type = self.symbol_table.getSymbolType(left)
+            right = f"std::any_cast<{n_type}>({right})"
+            left = self.visitor_operations(left)
+        else:
+            right = self.visitor_operations(right)
+            left = self.visitor_operations(left)
         if op == "//":
             return f"std::floor({left} / {right})"
         return f"{left} {op} {right}"
