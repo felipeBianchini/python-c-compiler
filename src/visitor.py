@@ -11,7 +11,9 @@ class Visitor:
             "logical_operation",
             "relational_operation",
             "unary_operation",
-            "function_call"
+            "function_call",
+            "simple_assignment_operation",
+            "access_id"
         }
         self.keywords = ["break", "continue"]
         self.functions_started = False
@@ -120,9 +122,10 @@ class Visitor:
                     arrayResult += f'{i}'
                     types.append("str")
                 else:
-                    if self.check_if_var_exists(i):
+                    symbol = self.symbol_table.lookup(i)
+                    if symbol:
                         arrayResult += f"{i}"
-                        types.append(self.get_symbol_type(i))
+                        types.append(symbol.datatype)
                     else:
                         raise Exception(f"Variable {i} does not exist: {array}")
             else:
@@ -145,35 +148,45 @@ class Visitor:
             
             value = map_dict[i]
             if isinstance(value, list):
-                valueResult, array_subtype = f"std::vector<std::any>({self.array_internal(value)[0]})"
+                result_tuple = self.array_internal(value)
+                valueResult = f"std::vector<std::any>({result_tuple[0]})"
+                array_subtype = result_tuple[1]
                 current_type = "list"
             elif isinstance(value, dict):
-                valueResult, array_subtype = f"std::map<std::string, std::any>({self.map_internal(value)[0]})"
+                result_tuple = self.map_internal(value)
+                valueResult = f"std::map<std::string, std::any>({result_tuple[0]})"
+                array_subtype = result_tuple[1]
                 current_type = "dict"
             elif isinstance(value, str):
                 if self.check_if_str(value):
                     valueResult = f'{value}'
                     current_type = "str"
                 else:
-                    if self.check_if_var_exists(value):
+                    symbol = self.symbol_table.lookup(value)
+                    if symbol:
                         valueResult = value
-                        current_type = self.get_symbol_type(value)
+                        current_type = symbol.datatype
                     else:
-                        raise ValueError(f"Variable {i} does not exist: {map_dict}")
+                        raise ValueError(f"Variable {value} does not exist: {map_dict}")
             else:
                 valueResult = str(value)
+                current_type = self.symbol_table.infer_type_from_value(value)
+            
             resultI = ""
             if not isinstance(i, str):
                 resultI = str(i)
             elif not self.check_if_str(i):
-                if self.check_if_var_exists(i):
-                    resultI = str(self.get_symbol_value(i))
+                symbol = self.symbol_table.lookup(i)
+                if symbol:
+                    resultI = str(symbol.value) if symbol.value is not None else str(i)
                 else:
                     raise ValueError(f"Variable does not exist: {i}: {map_dict}")
             else:
                 resultI = i
+            
             if not (resultI[0] == "\"" and resultI[-1] == "\""):
                 resultI = f"\"{resultI}\""
+            
             mapResult += "{" + f'{resultI}, {valueResult}' + "}"
             types[resultI] = {}
             types[resultI]["type"] = current_type
@@ -181,29 +194,45 @@ class Visitor:
                 types[resultI]["types"] = array_subtype
         mapResult += "}"
         return mapResult, types
-    
+
     def visitor_access_id(self, node):
         _, name, val = node
+        if isinstance(val, tuple):
+            val = self.visit(val)
         return f"{name}[{val}]"
 
     def visitor_array_assignment(self, call):
         result = ""
-        if call[1] not in self.symbol_table:
+        symbol = self.symbol_table.lookup(call[1])
+        if not symbol:
             result = "std::vector<std::any> "
+        
         internal_array, internal_types = self.array_internal(call[3])
         result += f"{call[1]} = {internal_array};\n"
-        self.symbol_table[self.current_level][call[1]] = {}
-        self.symbol_table[self.current_level][call[1]]["type"] = "list"
-        self.symbol_table[self.current_level][call[1]]["types"] = internal_types
+        
+        # Insert or update in symbol table
+        if symbol:
+            self.symbol_table.update_type(call[1], "list")
+        else:
+            self.symbol_table.insert(call[1], "list", value={"types": internal_types})
+        
         return result
 
     def visitor_dict_assignment(self, call):
         result = ""
-        if not call[1] in self.symbol_table:
+        symbol = self.symbol_table.lookup(call[1])
+        if not symbol:
             result += "std::map<std::string, std::any> "
-        internal_map = self.map_internal(call[3])
-        result += f"{call[1]} = {internal_map};\n"
-        self.symbol_table[self.current_level][call[1]]["type"] = "dict"
+        
+        internal_map, internal_types = self.map_internal(call[3])
+        result += f"{call[1]} = {internal_map[0]};\n"
+        
+        # Insert or update in symbol table
+        if symbol:
+            self.symbol_table.update_type(call[1], "dict")
+        else:
+            self.symbol_table.insert(call[1], "dict", value={"types": internal_types})
+        
         return result
 
     def visitor_append(self, node):
@@ -241,16 +270,26 @@ class Visitor:
             return self.visitor_unary_operation(node).strip()
         if kind == "function_call":
             return self.visitor_function_call(node)
+        if kind == "access_id":
+            return self.visitor_access_id(node)
         raise ValueError(f"Unknown node type: {kind}")
 
     def visitor_arithmetic_operation(self, call):
         _, left, op, right = call
         if self.symbol_table.getSymbolType(left) == "any":
-            n_type = self.symbol_table.getSymbolType(right)
+            n_type = ""
+            if isinstance(right, tuple):
+                n_type = self.symbol_table.infer_type_from_operation(right)
+            else:
+                n_type = self.symbol_table.getSymbolType(right)
             left = f"std::any_cast<{n_type}>({left})"
             right = self.visitor_operations(right)
         elif self.symbol_table.getSymbolType(right) == "any":
-            n_type = self.symbol_table.getSymbolType(left)
+            n_type = ""
+            if isinstance(right, tuple):
+                n_type = self.symbol_table.infer_type_from_operation(left)
+            else:
+                n_type = self.symbol_table.getSymbolType(left)
             right = f"std::any_cast<{n_type}>({right})"
             left = self.visitor_operations(left)
         else:
@@ -300,6 +339,7 @@ class Visitor:
 
     def visitor_simple_assignment_operation(self, call):
         _, var_name, symbol, value = call
+        
         if isinstance(value, tuple) and value[0] in self.VALID_OPERATION_NODES:
             value_code = self.visitor_operations(value)
             datatype = self.symbol_table.infer_type_from_operation(value)
@@ -307,10 +347,12 @@ class Visitor:
             value_code = str(value)
             datatype = self.symbol_table.infer_type_from_value(value)
         
-        if self.symbol_table.lookup(var_name) == None:
+        if not isinstance(var_name, tuple) and self.symbol_table.lookup(var_name) == None:
             self.symbol_table.insert(var_name, datatype, value=value)
             return f"{datatype} {var_name} {symbol} {value_code};\n"
         else:
+            if isinstance(var_name, tuple) and var_name[0] in self.VALID_OPERATION_NODES:
+                var_name = self.visitor_operations(var_name)
             return f"{var_name} {symbol} {value_code};\n"
 
     def visitor_print_call(self, call):
@@ -405,7 +447,6 @@ class Visitor:
 
 
     def write_elif(self, node):
-        print(node)
         cond = self.visit(node[1])
         self.symbol_table.enter_scope("elif")
         body = self.visit(node[2])
@@ -424,15 +465,17 @@ class Visitor:
 
     def visitor_conditional(self, node):
         result = ""
-        if len(node) > 1:
-            result += self.write_if(node[1])
         if len(node) > 2:
-            for i in node[2]:
-                if i == "elif_list":
-                    continue
-                result += self.write_elif(i[0])
+            result += self.write_if(node[1])
         if len(node) > 3:
-            result +=self. write_else(node[3])
+            elif_else = node[2: -1]
+            for i in elif_else:
+                if i[0] == "elif_list":
+                    for j in i[1: -1]:
+                        result += self.write_elif(j)  
+                if i[0] == "else":
+                    result +=self. write_else(node[3])
+                    break
         return result
 
     def visitor_incomplete_block_body(self, node):

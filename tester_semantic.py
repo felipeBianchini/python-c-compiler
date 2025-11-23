@@ -21,7 +21,8 @@ lexer.input(source_code)
 # Create Parser
 parser = Parser()
 parseTree = parser.parser.parse(source_code, lexer=lexer)
-print(parseTree)
+for i in parseTree:
+    print(i)
 
 #Create Visitor for code generation
 #try:

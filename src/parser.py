@@ -276,10 +276,10 @@ class Parser:
         '''
         if len(p) == 7:
             print(f">> access id {p[1]} {p[3]} {p[5]}")
-            p[0] = ("access id", p[1], p[3], p[5])
+            p[0] = ("access_id", p[1], p[3], p[5])
         else:
-            print(f">> access id {p[1]} {p[3]}")
-            p[0] = ("access id", p[1], p[3])
+            print(f">> access_id {p[1]} {p[3]}")
+            p[0] = ("access_id", p[1], p[3])
 
     def p_arithmetic_symbol(self, p):
         '''arithmetic_symbol : PLUS 
@@ -743,7 +743,7 @@ class Parser:
                           | class
                           | function_call
                           | operation
-                          | loop_conditional
+                          | conditional
                           | print
                           | loop
                           | BREAK
