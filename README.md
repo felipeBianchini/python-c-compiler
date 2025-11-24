@@ -35,3 +35,53 @@ Since PLY doesnt allow t_<TokenName\> methods to return more than one token, a s
 The Parser is located in the file src/parser.py. It contains productions for the many different valid token combinations allowed in fangless Python.
 
 The productions are divided in different types, including loops, conditionals, assignments, etc. The final objective of the parser is to reach the "program" productions which describes a full and correct fangless python source code.
+
+### Code generator
+
+Generates code based on the parse tree created by the parser.
+
+#### Symbol table
+
+Used by the Visitor class to save variables, their scope, value and type. It helps the Visitor to easily control the existing variables and check their data.
+
+#### Visitor
+
+Receives the parser tree and an empty Symbol table, it generates a plain text string containing all the needed code to run, it should be noted that utilities.hpp is needed to compile the finished code.
+
+#### Utilities.hpp
+
+Contains extra code needed to facilitate the handling of certain contexts. More specifically, it allows for std::cout to print std::any and other types of variables, facilitating their use.
+
+#### Testing
+
+For the sake of testing the code generator, a file named tester_semantic.py exists. It call the lexer, parser and visitor in line and creates a new .cpp with the same name as the input .py file where it writes the final resulta of the code generator.
+
+### Algorithm comparison
+
+#### Iterative Fibonacci
+
+| Version   |   Time(cs) |
+|-----------|----:|
+| Generated |  20 |
+| Handmade  |   6 |
+| Python    | 301 |
+
+
+#### Recursive Fibonacci
+
+| Version   |   Time(cs) |
+|-----------|----:|
+| Generated |  193,128 |
+| Handmade  |   9,419 |
+| Python    | 240 |
+
+#### Bubble sort 
+
+For this table, the numbers on the top denote the amount of numbers in the array, the 3 lower rows denote the amount of cs taken to run the sorting algorithm.
+
+
+| Version   |   5 |  10 |  20 |  25 |  50 | 100 | 250 | 500 | 1000 |  2000 |
+|-----------|----:|----:|----:|----:|----:|----:|----:|----:|-----:|------:|
+| Generated |  11 |   2 |   9 |   9 |   9 |  11 |  51 | 345 | 2683 | 28858 |
+| Handmade  |   9 |   1 |   9 |   8 |   9 |   8 |   7 |  11 |   13 |    23 |
+| Python    | 242 | 241 | 239 | 241 | 240 | 265 | 241 | 242 |  241 |   261 |
