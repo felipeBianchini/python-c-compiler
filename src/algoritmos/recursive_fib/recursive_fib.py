@@ -6,5 +6,5 @@ def fibonacci(n):
     res = fibonacci(n - 1) + fibonacci(n - 2)
     return res
 
-for i in range(10):
+for i in range(50):
     print(fibonacci(i))

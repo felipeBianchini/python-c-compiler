@@ -12,5 +12,5 @@ def fib(n):
         a = c
     return a
 
-for i in range(10):
+for i in range(50):
     print(fib(i))

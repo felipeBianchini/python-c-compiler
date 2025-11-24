@@ -7,7 +7,7 @@ int fibonacci(int n) {
 }
 
 int main() {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 50; i++) {
         std::cout << fibonacci(i) << " ";
     }
     return 0;
