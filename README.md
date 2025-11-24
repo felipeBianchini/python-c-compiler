@@ -66,6 +66,7 @@ For the sake of testing the code generator, a file named tester_semantic.py exis
 | Handmade  |   6 |
 | Python    | 301 |
 
+![Graph for Iterative Fibonacci](graphs/IterFib.png)
 
 #### Recursive Fibonacci
 
@@ -74,6 +75,8 @@ For the sake of testing the code generator, a file named tester_semantic.py exis
 | Generated |  193,128 |
 | Handmade  |   9,419 |
 | Python    | 240 |
+
+![Graph for Recursive Fibonacci](graphs/RecFib.png)
 
 #### Bubble sort 
 
@@ -85,3 +88,5 @@ For this table, the numbers on the top denote the amount of numbers in the array
 | Generated |  11 |   2 |   9 |   9 |   9 |  11 |  51 | 345 | 2683 | 28858 |
 | Handmade  |   9 |   1 |   9 |   8 |   9 |   8 |   7 |  11 |   13 |    23 |
 | Python    | 242 | 241 | 239 | 241 | 240 | 265 | 241 | 242 |  241 |   261 |
+
+![Graph for Bubble sort](graphs/BubbleSort.png)
