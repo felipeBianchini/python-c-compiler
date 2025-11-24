@@ -145,14 +145,3 @@ class SymbolTable:
         if type1 == type2:
             return type1
         return None
-    
-    def print_table(self):
-        # Imprime todos los símbolos registrados en una tabla legible
-        print("\nTABLA DE SÍMBOLOS\n" + "="*80)
-        for s in self.symbols.values():
-            print(f"{s.name:<12} {s.datatype:<10} {s.category:<10} {s.scope:<12}")
-        print("="*80)
-
-    def print_summary(self):
-        # Muestra cuántos símbolos hay registrados en total
-        print(f"\nSímbolos totales: {len(self.symbols)}")

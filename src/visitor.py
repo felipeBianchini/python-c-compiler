@@ -17,10 +17,12 @@ class Visitor:
         }
         self.keywords = ["break", "continue"]
         self.functions_started = False
+        self.isleft = False
+        self.DoesFunctionCallNeedsSemiColon = True
         pass
 
     def start(self):
-        includes = '''#include<any>\n#include<cmath>\n#include<iostream>\n#include<vector>\n#include<map>\n'''
+        includes = '''#include<any>\n#include<cmath>\n#include<iostream>\n#include<vector>\n#include<map>\n#include "utilities.hpp"\n\n'''
         code = ""
         global_vars= ""
         main = ""
@@ -79,7 +81,7 @@ class Visitor:
         sym = self.symbol_table.lookup(symbol)
         if sym is None:
             raise ValueError(f"Symbol {symbol} does not exist")
-        return sym.datatype
+        return symbol
 
     def visitor_function_call(self, call):
         _, name, args_node = call
@@ -96,7 +98,12 @@ class Visitor:
                     else:
                         arg_parts.append(self.visit(first))
                 cpp_args = ", ".join(arg_parts)
-                return f"{name}({cpp_args})"
+                if self.DoesFunctionCallNeedsSemiColon:
+                    self.DoesFunctionCallNeedsSemiColon = True
+                    return f"{name}({cpp_args});\n"
+                else:
+                    self.DoesFunctionCallNeedsSemiColon = True
+                    return f"{name}({cpp_args})"
             else:
                 print(f"Error Not enough parameters to call {call[1]}")
         else:
@@ -199,7 +206,14 @@ class Visitor:
         _, name, val = node
         if isinstance(val, tuple):
             val = self.visit(val)
-        return f"{name}[{val}]"
+        if not self.isleft:
+            if self.symbol_table.getSymbolType(name) == "any":
+                self.isleft = False
+                return f"std::any_cast<int>(std::any_cast<std::vector<std::any>>({name})[{val}])"
+        else: 
+            if self.symbol_table.getSymbolType(name) == "any":
+                self.isleft = False
+                return f"std::any_cast<std::vector<std::any>&>({name})[{val}]"
 
     def visitor_array_assignment(self, call):
         result = ""
@@ -209,13 +223,11 @@ class Visitor:
         
         internal_array, internal_types = self.array_internal(call[3])
         result += f"{call[1]} = {internal_array};\n"
-        
         # Insert or update in symbol table
         if symbol:
             self.symbol_table.update_type(call[1], "list")
         else:
             self.symbol_table.insert(call[1], "list", value={"types": internal_types})
-        
         return result
 
     def visitor_dict_assignment(self, call):
@@ -269,6 +281,7 @@ class Visitor:
         if kind == "unary_operation":
             return self.visitor_unary_operation(node).strip()
         if kind == "function_call":
+            self.DoesFunctionCallNeedsSemiColon = False
             return self.visitor_function_call(node)
         if kind == "access_id":
             return self.visitor_access_id(node)
@@ -352,6 +365,7 @@ class Visitor:
             return f"{datatype} {var_name} {symbol} {value_code};\n"
         else:
             if isinstance(var_name, tuple) and var_name[0] in self.VALID_OPERATION_NODES:
+                self.isleft = True
                 var_name = self.visitor_operations(var_name)
             return f"{var_name} {symbol} {value_code};\n"
 
@@ -370,7 +384,7 @@ class Visitor:
                 return result
             else:
                 if self.check_if_var_exists(exprs):
-                    result += f'std::cout << {self.get_symbol_value(exprs)} << std::endl;\n'
+                    result += f'std::cout << {exprs} << std::endl;\n'
                     return result
                 else:
                     raise ValueError(f"Variable {exprs} does not exist")
@@ -466,9 +480,9 @@ class Visitor:
 
     def visitor_conditional(self, node):
         result = ""
-        if len(node) > 2:
+        if len(node) > 1:
             result += self.write_if(node[1])
-        if len(node) > 3:
+        if len(node) > 2:
             elif_else = node[2:]
             for i in elif_else:
                 if i[0] == "elif_list":
